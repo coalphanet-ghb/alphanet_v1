@@ -1,0 +1,89 @@
+{
+  "pack_id": "auto_oem",
+  "label": "Automobile OEM (PV / 2W / CV / Tractors)",
+  "sub_sectors": ["auto OEM – PV", "auto OEM – 2W", "auto OEM – CV", "tractors/farm equipment"],
+  "version": 1,
+
+  "snapshot_vitals": [
+    {"metric_id": "volume_growth_yoy", "label": "Volume growth (YoY)", "unit": "percent", "calc": "sector_kpis.volume_growth"},
+    {"metric_id": "ebitda_margin_ttm", "label": "EBITDA margin (TTM)", "unit": "percent", "calc": "margins.ebitda_margin_ttm"},
+    {"metric_id": "market_share_primary", "label": "Market share (primary segment)", "unit": "percent", "calc": "sector_kpis.market_share"},
+    {"metric_id": "roce", "label": "ROCE", "unit": "percent", "calc": "returns.roce"},
+    {"metric_id": "net_debt_ebitda", "label": "Net debt / EBITDA", "unit": "x", "calc": "leverage.net_debt_ebitda"},
+    {"metric_id": "promoter_pledge", "label": "Promoter holding (pledged)", "unit": "percent", "calc": "governance.promoter_pledge"},
+    {"metric_id": "ev_ebitda_ttm", "label": "EV/EBITDA (TTM)", "unit": "x", "calc": "valuation.ev_ebitda"},
+    {"metric_id": "ev_mix", "label": "EV % of volumes", "unit": "percent", "calc": "sector_kpis.ev_volume_share"}
+  ],
+
+  "macro_commodity_subset": ["Steel", "Aluminium", "Copper", "Rare Earth Magnets", "Crude Oil"],
+
+  "sector_queries": [
+    {"q": "siam monthly auto sales data latest press release", "blocks": ["C", "G"], "results": 3},
+    {"q": "fada vehicle retail data latest month press release", "blocks": ["C", "G"], "results": 3},
+    {"q": "india {segment} sales market share latest month", "blocks": ["C", "G"], "results": 3},
+    {"q": "india ev sales penetration vahan latest month", "blocks": ["C"], "results": 3},
+    {"q": "auto sector outlook {fy} icra OR crisil", "blocks": ["C", "H"], "results": 5},
+    {"q": "pm e-drive ev incentive scheme update", "blocks": ["C"], "results": 3},
+    {"q": "auto loan rates india trend", "blocks": ["C"], "results": 3},
+    {"q": "india car discounts dealer inventory latest", "blocks": ["C", "H"], "results": 3},
+    {"q": "imd monsoon forecast tractor demand", "blocks": ["C"], "results": 3}
+  ],
+
+  "compute": {
+    "skip_modules": [],
+    "sector_kpis": [
+      {"formula_id": "volume_growth", "label": "Volume growth YoY/3yCAGR", "inputs": ["monthly/quarterly volumes"], "norm_healthy": "above industry print", "norm_warning": "below industry for 2+ quarters (share loss)"},
+      {"formula_id": "wholesale_retail_gap", "label": "Wholesale minus retail volumes (channel fill)", "inputs": ["SIAM wholesale", "FADA retail"], "norm_healthy": "inventory 30-40 days", "norm_warning": ">45-50 days PV = discount-war setup"},
+      {"formula_id": "asp_blended", "label": "Blended realization per vehicle", "inputs": ["revenue", "volumes"], "norm_healthy": "rising with mix", "norm_warning": "falling ASP + rising volumes = discount-led"},
+      {"formula_id": "ebitda_per_vehicle", "label": "EBITDA per vehicle", "inputs": ["ebitda", "volumes"], "norm_healthy": "segment-dependent, trend matters", "norm_warning": "compressing while ASP rises = cost absorption failing"},
+      {"formula_id": "market_share", "label": "Share of segment (from industry prints)", "inputs": ["company volumes", "SIAM/FADA segment totals"], "norm_healthy": "stable/rising", "norm_warning": "falling 2+ years"},
+      {"formula_id": "ev_volume_share", "label": "EV % of volumes", "inputs": ["EV volumes", "total volumes"], "norm_healthy": "rising with unit economics disclosed", "norm_warning": "rising with undisclosed EV margins"},
+      {"formula_id": "capacity_utilization", "label": "Capacity utilization", "inputs": ["volumes", "stated capacity"], "norm_healthy": ">80% = pricing power", "norm_warning": "<65%"}
+    ]
+  },
+
+  "peer_table_columns": ["volume_growth_yoy", "ebitda_margin_ttm", "asp_trend", "market_share_delta", "ev_volume_share"],
+
+  "valuation": {
+    "primary_multiple": "P/E",
+    "secondary": ["EV/EBITDA"],
+    "cyclical": true,
+    "conventions": "Compare within segment only (PV vs PV, CV vs CV). CV and tractors are deep-cyclical: normalize earnings to mid-cycle before multiple framing. Tractor/rural franchises carry structural premium for lower cyclicality. Where the market applies SOTP for EV subsidiaries or stakes, note that the market is doing so — never construct your own SOTP."
+  },
+
+  "overlays": {
+    "business_model": "Sector model: cyclical assembler capturing brand + distribution margin; profit = volume x (realization - RM basket) - fixed-cost absorption. Healthy OEMs run NEGATIVE working capital (dealer advances, supplier credit) - report WC sign and trend. Unit economics = per-vehicle realization and EBITDA/vehicle. Revenue quality: order-backlog-backed for launch-driven models, else transactional-cyclical.",
+    "financials": "D1: growth MUST decompose volume x realization x mix (all published for OEMs) and compare vs SIAM/FADA segment prints for share math. RM basket = steel, aluminium, copper, plastics/crude derivatives, precious metals (catalysts); margin bridge vs commodity index with 1-2 quarter lag (contract resets). Watch other income: customer-advance float (tractors/2W, EV bookings). D2: dealer/channel financing recourse if disclosed; platform capex Rs 1,500-4,000 cr - peak-capex years depress ROCE, normalize before judging; capitalized R&D % vs expensed - aggressive capitalizers flatter PAT, compare policy across OEMs. D3: customer advances can swell CFO - strip to judge underlying conversion.",
+    "supply_chain": "Input basket: steel (body/chassis), aluminium (castings, EV push increases share), copper (wiring, EV multiplies), rare-earth magnets (EV traction motors - China single-source risk is live), semiconductors (2021 shortage archetype), precious metals (catalysts, ICE only). Check: import % of RM, semiconductor sourcing arrangements, battery-cell sourcing for EV lines (cell import vs local assembly vs captive).",
+    "governance": "Sector-typical: royalty payments to foreign parent/tech partners (trend as % of sales; hikes without shareholder approval history); dealer-network related parties; EV subsidiary structures (minority dilution of the growth asset - who owns the EV entity?).",
+    "peers": "Compare within segment. ASP and EBITDA/vehicle comparisons only meaningful within similar mix. Share data from SIAM (wholesale) vs FADA (retail) - never mix the two in one comparison; state which.",
+    "risks": "Sector signatures: demand cyclicality by segment (tractor=monsoon/rural cash; CV=freight economics+IIP; PV=urban income+financing; 2W=rural+entry-level stress); EV transition cannibalization of ICE cash cows; discount wars when channel inventory >45-50 days; commodity spikes with pass-through lag; regulatory shifts (emission-norm steps = pre-buy then demand hole, safety mandates = cost adds); EV subsidy dependence.",
+    "industry": "Cadence: monthly volumes (1st), SIAM ~10th, FADA ~5th-8th. Festive (Oct-Nov) = 35-40% of annual PV/2W retail. Monsoon (Jun-Sep) drives tractor H2. Price hikes cluster Jan/Apr. Commodity contracts reset quarterly. Emission/safety norm dates are demand-shape events.",
+    "valuation": "Cyclicals: state cycle position from C before percentile framing; low P/E on peak CV/tractor earnings is the classic trap - always show normalized-earnings context for CV/tractor-heavy names.",
+    "takeaways": "Monitorables vocabulary: next monthly SIAM/FADA print, festive-season retail, channel inventory days, EV mix trajectory, commodity reset direction, monsoon progress (tractor names)."
+  },
+
+  "forensic_signatures": [
+    "Discounts hidden in 'marketing expense' vs netted from revenue - check accounting-policy note when comparing margins across OEMs",
+    "Dealer stuffing: wholesale >> retail for 2+ quarters, especially before fiscal year-end",
+    "Warranty provision adequacy vs recall history",
+    "Royalty to parent rising faster than revenue",
+    "Capitalized R&D share rising while reported margins hold"
+  ],
+
+  "data_cadence": [
+    {"print": "Company monthly volumes", "when": "1st-2nd of month", "source": "exchange filing/press"},
+    {"print": "SIAM wholesale data", "when": "~10th of month", "source": "siam.in"},
+    {"print": "FADA retail + inventory commentary", "when": "5th-8th of month", "source": "fada.in"},
+    {"print": "Quarterly results + concall", "when": "within 45 days of quarter end", "source": "BSE"},
+    {"print": "IMD monsoon forecast", "when": "Apr (initial), Jun (update)", "source": "imd.gov.in"}
+  ],
+
+  "classic_mistakes": [
+    "Judging demand from wholesale (SIAM) alone - retail (FADA) minus wholesale is the channel truth",
+    "Annualizing festive quarters",
+    "Crediting EV optionality while ignoring near-term EV margin drag and ICE melt rate",
+    "Treating tractor cyclicality (monsoon/rural cash) like CV cyclicality (freight+IIP) - different clocks",
+    "Comparing ASP across different segment mixes"
+  ]
+}

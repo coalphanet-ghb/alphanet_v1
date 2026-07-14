@@ -1,24 +1,24 @@
 """
-Gemini wrapper. One active model per run — lite by default, the main model
-when `main.py high` is used — and NO fallback and NO automatic retries:
-the first error of any kind aborts the run cleanly, and retrying is a
-manual decision (cheap, because already-ingested URLs are reused).
+Gemini wrapper. One active model per run (lite default, `main.py high`
+for the main model). NO fallback, NO automatic retries: the first error
+aborts the run; retry is manual (cheap — ingested URLs are reused).
 
-Two call types:
-    read_urls()  active model + url_context  -> real passages from known URLs
-    synthesize() active model, no tools      -> reasoning / section writing
+Call types:
+    read_urls()      url_context      -> extraction (JSON mode optional)
+    synthesize()     no tools         -> plain text
+    generate_json()  no tools, JSON   -> structured envelopes
 
-Calls are self-throttled to the active model's free-tier RPM so the script
-doesn't trip its own rate limit (3.5-flash free tier is only 5 RPM / 20 RPD;
-3.1-flash-lite is 15 RPM / 500 RPD). Keep billing DISABLED on the GCP project.
+Self-throttled to the active model's RPM (3.5-flash free tier is only
+5 RPM / 20 RPD; 3.1-flash-lite is 15 RPM / 500 RPD). Keep billing
+DISABLED on the GCP project.
 """
 
+import json
 import time
-from typing import List
+from typing import List, Optional
 
 from src.config import (
-    GEMINI_API_KEY, GEMINI_LITE_MODEL, GEMINI_LITE_RPM,
-    gemini_configured,
+    GEMINI_API_KEY, GEMINI_LITE_MODEL, GEMINI_LITE_RPM, gemini_configured,
 )
 
 
@@ -31,10 +31,8 @@ class ModelOverloadedError(LLMError):
 
 
 class CallDeadlineError(LLMError):
-    """Google's server gave up on ONE request ("Deadline expired") —
-    usually url_context chewing on a slow or huge page. Also arrives with a
-    503 status, but it is a property of that URL, not of the model or your
-    quota, so ingestion skips the URL instead of aborting the run."""
+    """Google gave up on ONE request ("Deadline expired") — a property of
+    that URL/payload, not the model. Ingestion skips and moves on."""
 
 
 def _is_deadline(err: Exception) -> bool:
@@ -54,10 +52,10 @@ _client = None
 _active_model = GEMINI_LITE_MODEL
 _min_call_interval = 60.0 / GEMINI_LITE_RPM + 0.5
 _last_call_at = 0.0
+calls_made = 0     # per-process call counter (observability)
 
 
 def set_active_model(model: str, rpm: int) -> None:
-    """Called once by main.py before the run starts."""
     global _active_model, _min_call_interval
     _active_model = model
     _min_call_interval = 60.0 / max(rpm, 1) + 0.5
@@ -73,8 +71,7 @@ def _get_client():
         if not gemini_configured():
             raise LLMError(
                 "GEMINI_API_KEY is not set (or is still the placeholder). "
-                "Create a key in Google AI Studio on a project with billing "
-                "DISABLED, copy .env.example to .env, and fill it in."
+                "Copy .env.example to .env and fill it in."
             )
         from google import genai
         _client = genai.Client(api_key=GEMINI_API_KEY)
@@ -82,23 +79,23 @@ def _get_client():
 
 
 def _generate(contents, config):
-    """One call on the active model. Self-throttles to the model's RPM.
-    Any failure raises immediately — no retry, no fallback; the run should
-    end and be retried manually."""
-    global _last_call_at
+    """One call, throttled. Any failure raises immediately (no retry, no
+    fallback — run ends, rerun is manual)."""
+    global _last_call_at, calls_made
     client = _get_client()
 
     gap = _min_call_interval - (time.monotonic() - _last_call_at)
     if gap > 0:
         time.sleep(gap)
     _last_call_at = time.monotonic()
+    calls_made += 1
 
     try:
         return client.models.generate_content(
             model=_active_model, contents=contents, config=config
         )
     except Exception as e:
-        if _is_deadline(e):     # check before overload — it also carries a 503
+        if _is_deadline(e):
             raise CallDeadlineError(
                 f"{_active_model} request deadline expired (slow/huge page?): {e}"
             ) from e
@@ -109,12 +106,9 @@ def _generate(contents, config):
         raise LLMError(f"Gemini call to {_active_model} failed: {e}") from e
 
 
-def read_urls(urls: List[str], instruction: str) -> str:
-    """
-    Read specific, already-known URLs via the url_context tool and return the
-    extraction as text. This is the step that produces genuine source
-    passages — the only legitimate feedstock for evidence rows.
-    """
+def read_urls(urls: List[str], instruction: str, json_mode: bool = False,
+              max_tokens: int = 16384) -> str:
+    """Read known URLs via url_context; returns the model's text."""
     from google.genai import types
 
     if not urls:
@@ -122,23 +116,21 @@ def read_urls(urls: List[str], instruction: str) -> str:
     config = types.GenerateContentConfig(
         tools=[types.Tool(url_context=types.UrlContext())],
         temperature=0.1,
+        max_output_tokens=max_tokens,
+        # NOTE: response_mime_type is not combinable with tools on all
+        # versions; extraction prompts demand JSON in-text instead.
     )
     prompt = instruction + "\n\nURLs to read:\n" + "\n".join(urls)
     response = _generate(prompt, config)
     return response.text or ""
 
 
-def synthesize(messages, temperature: float = 0.3, max_tokens: int = 1800) -> str:
-    """
-    Plain reasoning/writing call, no tools. Accepts
-    [{"role": ..., "content": ...}] message lists, so analysis nodes need
-    no signature changes.
-    """
+def synthesize(messages, temperature: float = 0.3, max_tokens: int = 4096) -> str:
+    """Plain text call, no tools."""
     from google.genai import types
 
     system_parts = [m["content"] for m in messages if m["role"] == "system"]
     user_parts = [m["content"] for m in messages if m["role"] != "system"]
-
     config = types.GenerateContentConfig(
         system_instruction="\n\n".join(system_parts) or None,
         temperature=temperature,
@@ -148,3 +140,41 @@ def synthesize(messages, temperature: float = 0.3, max_tokens: int = 1800) -> st
     if not response.text:
         raise LLMError(f"Gemini returned an empty response: {response}")
     return response.text
+
+
+def generate_json(system: str, user: str, temperature: float = 0.2,
+                  max_tokens: int = 16384) -> dict:
+    """Structured call with JSON response mime type. Parse failure raises
+    LLMError (per node contract: invalid JSON = failed node run)."""
+    from google.genai import types
+
+    config = types.GenerateContentConfig(
+        system_instruction=system or None,
+        temperature=temperature,
+        max_output_tokens=max_tokens,
+        response_mime_type="application/json",
+    )
+    response = _generate(user, config)
+    text = response.text or ""
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        raise LLMError(f"Node returned invalid JSON envelope: {e}. "
+                       f"First 300 chars: {text[:300]}") from e
+
+
+def parse_json_lenient(text: str) -> Optional[dict]:
+    """For extraction responses (tools + JSON-in-text): strip fences,
+    find the outermost object. Returns None if unparseable."""
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.split("```", 2)[1] if t.count("```") >= 2 else t.strip("`")
+        if t.startswith("json"):
+            t = t[4:]
+    start, end = t.find("{"), t.rfind("}")
+    if start == -1 or end <= start:
+        return None
+    try:
+        return json.loads(t[start:end + 1])
+    except json.JSONDecodeError:
+        return None

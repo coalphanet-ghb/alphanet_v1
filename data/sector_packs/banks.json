@@ -1,0 +1,93 @@
+{
+  "pack_id": "banks",
+  "label": "Banks (private / PSU / SFB)",
+  "sub_sectors": ["private banks", "PSU banks", "small finance banks"],
+  "version": 1,
+  "_note": "Proof-of-generality pack: a lender's analysis shares NO industrial metrics. NBFCs get their own pack (funding-side differs: no CASA, ALM is central).",
+
+  "snapshot_vitals": [
+    {"metric_id": "nim", "label": "NIM", "unit": "percent", "calc": "sector_kpis.nim"},
+    {"metric_id": "casa", "label": "CASA ratio", "unit": "percent", "calc": "sector_kpis.casa"},
+    {"metric_id": "credit_growth", "label": "Credit growth (YoY)", "unit": "percent", "calc": "sector_kpis.credit_growth"},
+    {"metric_id": "gnpa", "label": "GNPA", "unit": "percent", "calc": "sector_kpis.gnpa"},
+    {"metric_id": "pcr", "label": "Provision coverage", "unit": "percent", "calc": "sector_kpis.pcr"},
+    {"metric_id": "roa", "label": "RoA", "unit": "percent", "calc": "sector_kpis.roa"},
+    {"metric_id": "car", "label": "CAR / CET1", "unit": "percent", "calc": "sector_kpis.car"},
+    {"metric_id": "pb", "label": "P/B (TTM)", "unit": "x", "calc": "valuation.pb"}
+  ],
+
+  "macro_commodity_subset": ["RBI Repo Rate", "System liquidity", "INR/USD Exchange Rate"],
+
+  "sector_queries": [
+    {"q": "rbi sectoral credit growth latest fortnightly data", "blocks": ["C", "G"], "results": 3},
+    {"q": "bank deposit growth india latest rbi", "blocks": ["C"], "results": 3},
+    {"q": "banking sector nim outlook {fy} india", "blocks": ["C"], "results": 3},
+    {"q": "unsecured retail credit stress india rbi latest", "blocks": ["C", "H"], "results": 3},
+    {"q": "rbi financial stability report latest banks", "blocks": ["C", "H"], "results": 5},
+    {"q": "banking sector outlook {fy} icra OR crisil OR care", "blocks": ["C", "H"], "results": 5}
+  ],
+
+  "compute": {
+    "skip_modules": ["margins", "working_capital", "cashflow", "leverage"],
+    "_skip_note": "EBITDA, WC cycle, FCF, ND/EBITDA are meaningless for a levered spread business. returns.py runs in RoA-tree mode.",
+    "sector_kpis": [
+      {"formula_id": "nim", "label": "NII / avg interest-earning assets", "inputs": ["NII", "avg earning assets"], "norm_healthy": "3-4.5% banks", "norm_warning": "compressing >30bps YoY without mix explanation"},
+      {"formula_id": "casa", "label": "(Current+Savings)/total deposits", "inputs": ["deposit mix"], "norm_healthy": "35-45% strong", "norm_warning": "falling in rising-rate cycles = funding-cost pressure"},
+      {"formula_id": "credit_growth", "label": "Advances growth vs system", "inputs": ["advances", "RBI system print"], "norm_healthy": "at/above system with stable asset quality", "norm_warning": "far above system in unsecured segments"},
+      {"formula_id": "gnpa", "label": "GNPA / NNPA %", "inputs": ["disclosed"], "norm_healthy": "GNPA <2-3% private", "norm_warning": "rising with slippages"},
+      {"formula_id": "slippage_ratio", "label": "Fresh slippages / opening advances (LEADING indicator)", "inputs": ["disclosed slippages"], "norm_healthy": "<2%", "norm_warning": "rising 2 consecutive quarters"},
+      {"formula_id": "credit_cost", "label": "Provisions / avg advances", "inputs": ["provisions", "avg advances"], "norm_healthy": "<1% through-cycle for quality books", "norm_warning": "guided-down credit cost with rising slippages"},
+      {"formula_id": "pcr", "label": "Provision coverage ratio", "inputs": ["provisions held", "GNPA"], "norm_healthy": ">70%", "norm_warning": "falling PCR while GNPA 'improves' via write-offs"},
+      {"formula_id": "writeoff_adjusted_gnpa", "label": "GNPA + cumulative write-offs view", "inputs": ["GNPA", "write-offs"], "norm_healthy": "", "norm_warning": "headline GNPA improving mainly via write-offs"},
+      {"formula_id": "roa", "label": "RoA + full tree decomposition", "inputs": ["NII, fees, opex, credit cost as % assets"], "norm_healthy": "1%+ good, 2%+ excellent", "norm_warning": "RoA held by one-off treasury/recovery income"},
+      {"formula_id": "car", "label": "CAR / CET1 vs regulatory + growth headroom", "inputs": ["disclosed"], "norm_healthy": "CET1 >13% comfortable", "norm_warning": "growth plans exceeding internal accrual + headroom"},
+      {"formula_id": "cd_ratio", "label": "Credit-deposit ratio", "inputs": ["advances", "deposits"], "norm_healthy": "75-90%", "norm_warning": ">90% = deposit-funding strain"}
+    ]
+  },
+
+  "peer_table_columns": ["nim", "casa", "credit_growth", "gnpa", "pcr", "roa", "cd_ratio"],
+
+  "valuation": {
+    "primary_multiple": "P/B",
+    "secondary": ["P/ABV", "P/E"],
+    "cyclical": false,
+    "conventions": "P/B (or P/ABV where NPAs distort book) read against RoE - the P/B-vs-RoE regression IS the sector's valuation map; sustainable RoE above cost of equity mechanically justifies >1x book. Peer within model class only: large private != SFB != PSU. Never use EV multiples or EBITDA language."
+  },
+
+  "overlays": {
+    "business_model": "Sector model: spread business on a levered balance sheet - the P&L IS the balance sheet. Growth without asset quality is future credit cost. Franchise quality = liability side (CASA, granular retail deposits) more than asset side. Revenue quality ladder: granular retail NII > fee income (recurring) > treasury gains (cyclical) > one-off recoveries.",
+    "financials": "Replace industrial D1/D2/D3 entirely. Analyze: (1) RoA tree - NII/assets + fees/assets - opex/assets (cost-income) - credit cost/assets -> RoA; x leverage -> RoE; name the moving lever. (2) NIM decomposition: yield on advances vs cost of funds; floating books reprice with repo, deposits lag ~2-3 quarters -> NIM expands in hiking cycles, compresses in cuts; separate mix effect from rate effect. (3) Growth quality: WHERE the book grows (unsecured personal/MFI = high-yield high-risk; secured mortgage = slow safe) - segment mix shift IS the risk story. (4) Asset quality full set: GNPA/NNPA + slippages (leading) + credit cost + PCR + write-off-adjusted view + restructured book. (5) Capital: CET1 vs growth plans. Counter-cyclical provision buffers = management prudence signal.",
+    "supply_chain": "Reframe entirely: a bank's supply chain is its FUNDING (deposits: granularity, bulk dependence, top-20 depositor share, CASA stickiness) and its DISTRIBUTION (branch/digital mix, DSA dependence for origination, co-lending partners). Concentration lens: depositor concentration, sector concentration of the loan book, top-20 borrower share.",
+    "governance": "Sector-typical: divergence reports (RBI-assessed vs disclosed NPAs - any divergence is an automatic red flag); promoter/group exposure of the book; evergreening signatures (restructured accounts regrowing, fresh lending to stressed groups' SPVs); management tenure vs RBI approval cycles; auditor comments on IT/controls.",
+    "peers": "Peer within model class. NIM comparisons require similar book mix - a 6% NIM MFI-heavy book is not 'better' than a 4% mortgage book, it is differently risky. Always pair growth with asset-quality columns - growth alone misleads.",
+    "risks": "Sector signatures: credit cycle position by segment (unsecured retail, MFI stress cycles); deposit-funding strain (CD ratio, bulk dependence); NIM compression in rate-cut cycles; regulatory actions (PCA, business restrictions, divergence); concentration (borrower, sector, depositor); ALM for anything wholesale-funded; technology/UPI disruption of fee pools.",
+    "industry": "Cadence: RBI fortnightly credit/deposit data; monthly business updates (many banks pre-release); quarterly results with slippage detail; RBI policy (repo + stance + liquidity); FSR twice yearly. System credit growth vs nominal GDP is the demand anchor.",
+    "valuation": "Frame P/B against sustainable RoA/RoE from the tree, not headline. State where the bank sits on the sector's P/B-vs-RoE line and whether the deviation is explained by asset-quality or growth-mix differences.",
+    "takeaways": "Monitorables vocabulary: next quarterly slippage number, monthly business update growth split, RBI policy dates, FSR commentary on the bank's dominant segments, deposit growth vs credit growth gap."
+  },
+
+  "forensic_signatures": [
+    "GNPA improvement driven by write-offs while credit cost stays elevated",
+    "RBI divergence in NPA recognition (any amount)",
+    "Restructured/standard-with-moratorium accounts regrowing",
+    "Fee income from upfront-booked assignment/securitization gains",
+    "Deposit growth concentrated in bulk/certificates while CASA bleeds",
+    "Lending to promoter-adjacent or stressed-group entities"
+  ],
+
+  "data_cadence": [
+    {"print": "RBI fortnightly credit/deposit", "when": "fortnightly", "source": "rbi.org.in"},
+    {"print": "Monthly business update", "when": "first week of month", "source": "exchange filing"},
+    {"print": "Quarterly results (slippage detail)", "when": "within 45 days", "source": "BSE"},
+    {"print": "RBI MPC", "when": "6 scheduled meetings/year", "source": "rbi.org.in"},
+    {"print": "Financial Stability Report", "when": "Jun & Dec", "source": "rbi.org.in"}
+  ],
+
+  "classic_mistakes": [
+    "Using EBITDA, FCF, or working-capital language for a lender",
+    "Reading high NIM as quality without the risk mix",
+    "Judging asset quality on GNPA alone while write-offs do the cleaning",
+    "Comparing SFB/MFI economics to large private banks",
+    "Missing that credit growth is future credit cost when underwriting slips"
+  ]
+}

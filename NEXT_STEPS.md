@@ -1,68 +1,72 @@
-# Ready to test — lite-by-default, company menu, no fallback
+# Rebuild complete — S0–S9 pipeline is live. Your test path.
 
-What changed (driven by your quota panel: 3.5-flash free tier is only
-**5 RPM / 20 RPD**, while 3.1-flash-lite gets **15 RPM / 500 RPD**):
+The old 5-node prose pipeline is replaced by the full design-chain
+implementation: staged workflow (resolve → discover → extract → compute →
+synthesis waves → verify → compose), spec-driven prompts, sector packs,
+metric observations + deterministic calc, evidence-UUID citations,
+claim verification, and a blueprint-shaped report (A–K).
 
-- **Lite model is the default.** `python main.py` runs everything on
-  `gemini-3.1-flash-lite`. `python main.py high` uses `gemini-3.5-flash`.
-- **No fallback, no automatic retries.** The first error of any kind stops
-  the run cleanly (marked `failed` in `runs`, with the error message).
-  Retry = run `main.py` again yourself; already-ingested URLs are reused
-  with zero LLM calls, so retries only spend quota on what's left.
-- **Self-throttling.** Calls are paced to the active model's RPM
-  (~12.5s/call on high, ~4.5s on lite) so the script no longer trips its
-  own rate limit — that was a big part of your 503s. The `high` run being
-  slow is intentional; it's the quota, not the code.
-- **Company menu.** `main.py` now asks: `1. SONA  2. M&M`. M&M is wired
-  through the same query templates and the auto sector bank.
-
-## Test flow
+## Run it
 
 ```bash
-python scripts/seed_entities.py    # re-run once — new M&M peers/relationships added
-python main.py                     # pick 1 (SONA) or 2 (M&M), runs on lite
+pip install -r requirements.txt        # deps unchanged + requests
+python main.py --dry-run --ticker SONACOMS   # sanity (zero network) — should pass in seconds
+python main.py --ticker SONACOMS             # live, lite model
+python main.py --ticker "M&M"                # then M&M
 ```
 
-Budget per fresh company run: 2 macro + 2 sector + 4 company reads
-+ 6 synthesis = **14 calls** (your tested caps, now the defaults in
-`src/config.py`). On lite's 500 RPD you can raise `MAX_URLS_*` freely;
-on `high` (20 RPD) a fresh run barely fits — see the pattern below.
+(Or `python main.py` for the menu. `high` mode: do NOT use for a first
+generation — ~35–40 calls won't fit 20 RPD. After a lite run has ingested
+everything, `high` reruns spend only ~13 synthesis/verify calls.)
 
-**A pattern worth using:** ingest on lite first (`python main.py`), then
-run `python main.py high` for the same company — the reads are all reused
-from Supabase, so the high-quality model only spends ~6 synthesis calls.
-Best report per unit of 3.5-flash quota.
+Budget per fresh company run: ~20–26 url_context reads + 9 synthesis +
+up to 4 verification calls ≈ **35–40 calls, 15–25 min** on lite
+(self-throttled ~4.5s/call + read latency). The run prints its call
+count at the end.
 
-Notes:
-- SONA's macro/sector URLs from earlier successful runs will be reused
-  (`URL already ingested — reusing N evidence rows`), so an M&M run mostly
-  spends calls on M&M-specific pages.
-- `runs.model_used` records which model produced each report — check it
-  before judging output quality per HANDOFF.md §12.
-- If model names go stale again: `python scripts/list_models.py --test`,
-  then set `GEMINI_LITE_MODEL` / `GEMINI_MAIN_MODEL` in `.env`.
-  (The old `GEMINI_SYNTHESIS_MODEL` / `GEMINI_FALLBACK_MODELS` env vars
-  are no longer read — remove them from `.env` if you set them.)
+## What to expect / watch on the first live runs
 
-## What to verify after a successful run
+This first live run doubles as the **screener-readability spike** — the
+metric backbone depends on it:
 
-- Report in `data/reports/` (M&M's file is `M_M_<timestamp>.md` — ticker
-  sanitized for the filename).
-- Supabase: `source_documents` (`metadata.layer`), `evidence`,
-  `entity_mentions`, `report_versions`, `runs` (status + `model_used`).
-- Sources section: any ⚠️ unresolved citation = the model invented one.
-- Which queries earned their keep: `source_documents.metadata.discovered_for`
-  — prune weak ones in `src/ingestion/queries.py`.
+1. **`[s3_compute] N observations validated`** — the single most important
+   log line. Healthy: 150+ observations from the screener pages. Near
+   zero → url_context couldn't read screener tables → A/D/G/I will be
+   thin and honest about it (every gap lands in insufficiencies, visible
+   in the report's "Not found in sources" sections).
+2. **Extraction parse warnings** (`unparseable extraction`) — lite-model
+   JSON discipline is the other open risk. Occasional single-doc failures
+   are fine (skip-and-continue); if MOST reads fail parsing, stop and
+   tell me — the extraction prompt needs tightening.
+3. **Concall discovery** — watch `[s1] no transcript found for QxFYyy`;
+   4 quarters found is the target, 2 is acceptable for a first pass.
+4. **Verification results** — the end of the report carries a quality
+   badge (citations resolved, claims supported). Failed claims appear
+   per-section with reasons.
+5. Reruns stay cheap: every ingested URL is reused with zero LLM calls
+   (`[s2] reuse (N evidence, no LLM call)`), including across the
+   SONA → M&M pair (shared macro/sector pages).
 
-## Caveats (unchanged)
+## Comparing vs the old reports
 
-- URL reuse is by exact URL, forever — delete a `source_documents` row to
-  force a fresh read. Real freshness policy = Sprint 6 update workflow.
-- ddgs sometimes rate-limits or returns junk; a failed query is logged
-  and skipped, and reruns are cheap.
+Old reports are in `data/reports/` (pre-2026-07-14 timestamps). Compare:
+- **Structure:** 6 prose sections → 11 blueprint sections incl. snapshot,
+  supply chain, forensic flags, guidance scorecard, peer table, monitorables
+- **Numbers:** old = whatever prose the model wrote; new = only computed
+  values with `calc:` lineage or evidence-cited prints
+- **Honesty:** the new report says "not computable yet" / "not found in
+  sources" instead of narrating around gaps
+- **Trust:** quality badge + per-claim verification vs a bare citation list
 
-## After that: Sprint 2
+## Known first-run rough edges (by design, fix after seeing real output)
 
-Nodes emit structured `{claim, evidence_ids, confidence}` JSON into
-`knowledge_entries`/`claims` (the integrity check in `src/db.py:save_claims`
-is already built and waiting), plus the per-node `spec.md` files (HANDOFF.md §7).
+- Sector KPIs (order book, EV revenue share, volume growth) mostly need
+  presentation/AR extraction to hit; expect several "not computable yet"
+  cells in the snapshot on run one.
+- Valuation own-history percentile needs multiple history we don't ingest
+  yet — the section states it.
+- Guidance scorecard verdicts need quarters to pass; first runs show
+  "pending" for most items — the table fills as history accumulates.
+- If a section's envelope comes back as invalid JSON the run aborts (by
+  design, no retry) — rerun is cheap; if it repeats on the same section,
+  that spec's prompt needs work: tell me which one.

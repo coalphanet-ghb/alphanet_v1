@@ -1,144 +1,75 @@
-# AlphaNet — Company Research Workflow (Sprint 1: Gemini + Supabase)
+# AlphaNet — AI-native equity research for Indian equities
 
-A minimal, real LangGraph pipeline that proves out the core AlphaNet loop
-for one company (defaults to **Sona BLW Precision Forgings / Sona Comstar**,
-NSE: SONACOMS) before any of the scheduler/orchestrator/multi-company
-infrastructure gets built.
+Generates an institutional-grade, evidence-cited research report per
+company (no Buy/Sell/Hold — ever). Design docs, in dependency order:
 
-What it does, end to end:
+1. [REPORT_BLUEPRINT.md](REPORT_BLUEPRINT.md) — the 11-section report (frozen v0.3)
+2. [DATA_SOURCES.md](DATA_SOURCES.md) — source universe, sector taxonomy, query banks
+3. [REPORT_GEN_PLAYBOOK.md](REPORT_GEN_PLAYBOOK.md) — the ordered workflow + budgets
+4. [ANALYST_KNOWLEDGE.md](ANALYST_KNOWLEDGE.md) — how to analyze (universal + sector packs)
+5. [nodes/](nodes/README.md) — per-node specs (the prompts' source of truth)
+6. [data/sector_packs/](data/sector_packs/_SCHEMA.md) — machine-readable sector variation
 
-1. **Gathers sources** with the two-step pattern from HANDOFF.md §4:
-   - **Discover** (ddgs — deterministic Python, zero LLM calls):
-     hand-curated finance queries per layer (macro → auto sector → stock,
-     see `src/ingestion/queries.py`) find candidate URLs. URLs are the
-     *only* thing taken from this step.
-   - **Read** (`gemini-3.5-flash` + `url_context`): extract verbatim
-     passages from those URLs. These become `evidence` rows in Supabase,
-     and each chunk's citation ID **is** its evidence row UUID.
-
-   > Grounded `google_search` discovery was dropped: it required
-   > `gemini-2.5-flash`, which Google closed to new users (404), and on
-   > 3.x models grounding needs billing enabled. ddgs replaces it.
-2. **Runs 5 parallel, grounded analysis nodes** — Financial Analysis,
-   Business Overview, Management & Guidance, Risks, Peer & Market
-   Positioning — each citing its claims back to specific chunk IDs.
-3. **Synthesizes valuation & key takeaways** from all five sections.
-4. **Composes the final markdown report** deterministically (no LLM),
-   flags any citation that doesn't match a real gathered source, writes
-   the file to `data/reports/`, and saves a pinned `report_versions` row.
-
-Every non-dry run is logged to the `runs` table (status, model, errors).
-
-Macro and industry context are hand-written stubs for now
-(`src/knowledge/stubs.py`). Real, automated Macro and Industry workflows
-are Sprint 3 — see HANDOFF.md §9.
-
-## Call routing (updated from HANDOFF.md §3)
-
-| Step | Engine | Notes |
-|---|---|---|
-| URL discovery | ddgs (Python, no LLM) | keyword banks in `src/ingestion/queries.py` |
-| `src/llm.py: read_urls()` | active model + `url_context` | 1 call per URL read |
-| `src/llm.py: synthesize()` | active model, no tools | 6 calls per run (5 sections + valuation) |
-
-The **active model** is `gemini-3.1-flash-lite` by default (15 RPM /
-500 RPD free tier); `python main.py high` switches to `gemini-3.5-flash`
-(5 RPM / 20 RPD — tight). Calls are self-throttled to the model's RPM.
-**No fallback and no automatic retries** — the first error aborts the run
-cleanly and retrying is manual (cheap: ingested URLs are reused).
-
-**Keep billing DISABLED on the GCP project** — enabling it kills the free
-tier. The per-layer URL caps in `src/config.py` (`MAX_URLS_*`) are the main
-quota lever: a full fresh run = `2 + 2 + 4` reads + 6 synthesis calls.
-
-## Project layout
+## Pipeline (implements playbook S0–S9)
 
 ```
-alphanet/
-  main.py                        # CLI entrypoint + run bookkeeping
-  requirements.txt
-  .env.example
-  scripts/
-    seed_entities.py             # idempotent pilot entity/relationship seeding
-  src/
-    config.py                    # env vars, model name, URL/chunk caps
-    llm.py                       # Gemini wrapper: read_urls / synthesize
-    db.py                        # Supabase data access + citation-integrity check
-    ingestion/
-      queries.py                 # hand-curated finance queries per layer
-      research.py                # ddgs discover -> url_context read -> persist evidence
-    knowledge/
-      stubs.py                   # hardcoded macro & industry context (until Sprint 3)
-    workflow/
-      state.py                   # LangGraph state schema
-      prompts.py                 # all prompt templates
-      nodes.py                   # the 5 analysis nodes + valuation synthesis
-      graph.py                   # StateGraph wiring (fan-out / fan-in)
-    output/
-      report_writer.py           # deterministic markdown + citation check + report_versions
-  data/
-    seed_entities.json           # hand-curated pilot entity set
-    reports/                     # generated .md reports land here
+s0_resolve    company -> pack, peers, freshness, read plan        (0 LLM)
+s1_discover   ddgs queries -> rerank -> pre-flight -> URL plan    (0 LLM)
+s2_extract    url_context -> verbatim evidence + metric
+              candidates + cross-block tags (risk/guidance/
+              supply-edges); ingested URLs reused for free        (~20-26)
+s3_compute    validation gate -> metric_observations -> CAGRs,
+              margins, forensic battery, guidance scorecard,
+              peer table, valuation context                       (0 LLM)
+synth B,D,E,F -> G (peers) -> H (risks) -> C (industry/macro,
+              needs E's graph edges) -> I (valuation) -> J        (9)
+s9_verifier   claims vs cited evidence, batched                   (2-4)
+s8_composer   snapshot A + sources K + citation integrity +
+              markdown + report_versions                          (0 LLM)
 ```
 
-## Setup
+Prompts are assembled at runtime from `nodes/<node>/spec.md` + the
+company's sector pack overlays — changing a spec or pack changes the
+product; no code edit needed.
 
-1. **Create and activate a virtual environment**
+## Layout
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate        # Windows: .venv\Scripts\activate
-   ```
+```
+main.py                     # CLI: company menu, lite|high, --dry-run
+nodes/                      # node specs (source of truth for prompts)
+data/sector_packs/          # sector pack registry (JSON)
+data/seed_entities.json     # pilot entity graph seed
+scripts/seed_entities.py    # idempotent seeding
+scripts/list_models.py      # what models this key can use (--test)
+src/
+  config.py                 # env, models, companies, budgets, domains
+  llm.py                    # read_urls / synthesize / generate_json + throttle
+  db.py                     # Supabase DAL + citation-integrity + metrics
+  packs.py / specs.py       # pack loader / prompt assembler
+  pipeline/                 # s0..s9 nodes + graph + state + dry-run fixtures
+```
 
-2. **Install dependencies**
+## Running
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+python -m venv .venv && .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env        # GEMINI_API_KEY (no-billing project), Supabase keys
+python scripts/seed_entities.py
+python main.py --dry-run    # graph sanity, zero network
+python main.py              # live (lite model; 'high' only for reruns)
+```
 
-3. **Sanity-check the pipeline with zero network/API calls**
+See [NEXT_STEPS.md](NEXT_STEPS.md) for the current test checklist.
 
-   ```bash
-   python main.py --dry-run
-   ```
+## Ground rules (enforced in code, not vibes)
 
-   Runs the full graph on synthetic data in seconds, touching neither
-   Gemini nor Supabase. If this produces a report in `data/reports/`,
-   the code and graph wiring are good.
-
-4. **Add credentials** — see [NEXT_STEPS.md](NEXT_STEPS.md) for the full
-   checklist (Gemini key on a no-billing project, Supabase service_role key,
-   entity seeding).
-
-5. **Run it for real**
-
-   ```bash
-   python main.py          # lite model; asks which company (SONA / M&M)
-   python main.py high     # main model (gemini-3.5-flash) — slow by design (RPM throttle)
-   python main.py --ticker SONACOMS --company "Sona BLW Precision Forgings Limited (Sona Comstar)"   # skip the menu
-   ```
-
-6. **Read the output** in `data/reports/<TICKER>_<timestamp>.md` — like a
-   skeptical analyst, per HANDOFF.md §12 — and check the Supabase tables
-   (`source_documents`, `evidence`, `entity_mentions`, `report_versions`, `runs`).
-
-## Graceful degradation
-
-- No `GEMINI_API_KEY` → real runs exit immediately with a clear message;
-  `--dry-run` always works.
-- Gemini key set but no Supabase creds → the pipeline runs, chunks stay
-  in-memory, nothing is persisted (a warning is printed).
-
-## Known simplifications (deliberate)
-
-- **No vector search.** Nodes get chunks filtered by source type. Swap in
-  semantic ranking only when structural retrieval returns too much
-  (HANDOFF.md §5) — `format_chunks_for_prompt()` is the only seam.
-- **Nodes still emit prose with inline citation tags.** Structured
-  `{claim, evidence_ids, confidence}` JSON output is Sprint 2; the
-  application-level citation-integrity check it needs already exists in
-  `src/db.py:save_claims`.
-- **Entity linking is substring matching** against the hand-seeded set in
-  `data/seed_entities.json`. No NER, deliberately.
-- **Valuation is qualitative only.** No live price/multiples feed yet, and
-  the model is explicitly told not to invent one.
+- **Models interpret, Python computes** — every number carries lineage
+  (evidence UUID or calc:formula + input row ids)
+- **Every block cites or it doesn't ship** — unresolved citations are
+  flagged in the report; claims are verified against their evidence
+- **Gaps are reported, never papered over** — "not disclosed / not
+  computable yet" is first-class output
+- **No fallback, no auto-retry** — first LLM error aborts cleanly;
+  reruns reuse all ingested URLs at zero cost
+- Keep billing DISABLED on the GCP project (free tier dies otherwise)

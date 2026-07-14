@@ -167,6 +167,78 @@ def evidence_ids_exist(evidence_ids: List[str]) -> set:
     return {r["id"] for r in rows.data or []}
 
 
+# --- metric observations --------------------------------------------------
+
+def save_metric_observation(entity_id: str, metric_name: str, period_type: str,
+                            period_start: str, period_end: str, value: float,
+                            unit: Optional[str] = None,
+                            source_document_id: Optional[str] = None) -> Optional[str]:
+    """Upsert on the (entity, metric, period) unique constraint; returns the
+    row id (existing row's id on conflict — observed facts are append-only,
+    a re-read of the same print must not duplicate or overwrite)."""
+    client = get_client()
+    existing = (client.table("metric_observations").select("id")
+                .eq("entity_id", entity_id).eq("metric_name", metric_name)
+                .eq("period_start", period_start).eq("period_end", period_end)
+                .limit(1).execute())
+    if existing.data:
+        return existing.data[0]["id"]
+    inserted = client.table("metric_observations").insert({
+        "entity_id": entity_id, "metric_name": metric_name,
+        "period_type": period_type, "period_start": period_start,
+        "period_end": period_end, "value": value, "unit": unit,
+        "source_document_id": source_document_id,
+    }).execute()
+    return inserted.data[0]["id"]
+
+
+def get_metric_observations(entity_id: str,
+                            metric_names: Optional[List[str]] = None) -> List[dict]:
+    client = get_client()
+    q = (client.table("metric_observations").select("*")
+         .eq("entity_id", entity_id).order("period_start"))
+    if metric_names:
+        q = q.in_("metric_name", metric_names)
+    return q.execute().data or []
+
+
+# --- graph helpers ----------------------------------------------------------
+
+def get_peers(company_entity_id: str) -> List[dict]:
+    """Entities with a peer_of edge pointing AT this company."""
+    client = get_client()
+    rels = (client.table("entity_relationships").select("from_entity_id")
+            .eq("to_entity_id", company_entity_id)
+            .eq("relationship_type", "peer_of").execute()).data or []
+    ids = [r["from_entity_id"] for r in rels]
+    if not ids:
+        return []
+    rows = client.table("entities").select("id, name, metadata").in_("id", ids).execute()
+    return rows.data or []
+
+
+def get_relationships_for(entity_id: str) -> List[dict]:
+    """All edges touching an entity, with counterparty names resolved."""
+    client = get_client()
+    out = (client.table("entity_relationships").select("*")
+           .or_(f"from_entity_id.eq.{entity_id},to_entity_id.eq.{entity_id}")
+           .execute()).data or []
+    ids = {r["from_entity_id"] for r in out} | {r["to_entity_id"] for r in out}
+    if not ids:
+        return []
+    names = {e["id"]: e["name"] for e in
+             (client.table("entities").select("id, name").in_("id", list(ids)).execute()).data or []}
+    for r in out:
+        r["from_name"] = names.get(r["from_entity_id"], "?")
+        r["to_name"] = names.get(r["to_entity_id"], "?")
+    return out
+
+
+def update_claim_status(claim_id: str, status: str) -> None:
+    client = get_client()
+    client.table("claims").update({"verification_status": status}).eq("id", claim_id).execute()
+
+
 # --- knowledge entries & claims -----------------------------------------
 
 def _next_version(client, table: str, filters: dict) -> int:
