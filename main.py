@@ -41,6 +41,10 @@ def pick_company(ticker_arg: str | None) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="AlphaNet report generator")
     parser.add_argument("mode", nargs="?", default="lite", choices=["lite", "high"])
+    parser.add_argument("--model", default="gemini", choices=["gemini", "M3", "GLM"],
+                        help="M3 = MiniMax-M3 via Fireworks (PAID) · GLM = GLM-5.2 "
+                             "via NVIDIA trial. Both route synthesis+verification "
+                             "only; document reads stay on Gemini")
     parser.add_argument("--ticker", default=None)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -50,8 +54,16 @@ def main():
     else:
         set_active_model(GEMINI_LITE_MODEL, GEMINI_LITE_RPM)
 
+    if args.model != "gemini" and not args.dry_run:
+        from src.llm import set_synth_provider
+        provider = {"M3": "fireworks", "GLM": "nvidia"}[args.model]
+        set_synth_provider(provider)
+        print(f"Synthesis/verification: {args.model} via {provider} — "
+              f"document reads stay on Gemini.")
+
     if not args.dry_run and not gemini_configured():
-        parser.exit(1, "GEMINI_API_KEY is not set. Fill .env or use --dry-run.\n")
+        parser.exit(1, "GEMINI_API_KEY is not set (needed for document reads "
+                       "even with --model GLM). Fill .env or use --dry-run.\n")
 
     company = pick_company(args.ticker)
     persist = not args.dry_run and supabase_configured()

@@ -22,6 +22,38 @@ GEMINI_LITE_RPM = int(os.environ.get("GEMINI_LITE_RPM", "15"))
 GEMINI_MAIN_MODEL = os.environ.get("GEMINI_MAIN_MODEL", "gemini-3.5-flash")
 GEMINI_MAIN_RPM = int(os.environ.get("GEMINI_MAIN_RPM", "5"))
 
+# --- NVIDIA trial endpoint (GLM-5.2) --------------------------------------
+# OpenAI-style chat endpoint, no server-side URL fetching — with
+# `--model GLM` the synthesis/verification calls route here while S2
+# document reads stay on Gemini url_context.
+# (MiniMax-M3 was tried first and replaced: its long reasoning generations
+# kept hitting the trial gateway's 504 timeout; GLM-5.2 is faster.)
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
+NVIDIA_API_URL = os.environ.get(
+    "NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions")
+NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "z-ai/glm-5.2")
+NVIDIA_RPM = int(os.environ.get("NVIDIA_RPM", "6"))    # trial-tier pacing (bursty limiter)
+
+
+def nvidia_configured() -> bool:
+    return not _is_placeholder(NVIDIA_API_KEY)
+
+
+# --- Fireworks AI (PAID — MiniMax-M3 serverless) ---------------------------
+# `--model M3` routes synthesis/verification here. Paid tier: no trial
+# queue, no gateway 504s, up to 64K output tokens.
+FIREWORKS_API_KEY = os.environ.get("FIREWORKS_API_KEY", "")
+FIREWORKS_API_URL = os.environ.get(
+    "FIREWORKS_API_URL", "https://api.fireworks.ai/inference/v1/chat/completions")
+FIREWORKS_MODEL = os.environ.get("FIREWORKS_MODEL", "accounts/fireworks/models/minimax-m3")
+FIREWORKS_RPM = int(os.environ.get("FIREWORKS_RPM", "30"))
+
+
+def fireworks_configured() -> bool:
+    return not (_is_placeholder(FIREWORKS_API_KEY) or
+                FIREWORKS_API_KEY == "fireworks_paid_key")
+
+
 # --- Supabase ---------------------------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")

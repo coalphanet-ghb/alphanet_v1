@@ -90,7 +90,9 @@ def run_section(state, node_id: str, letter: str, context: dict) -> dict:
         env = synthetic_envelope(letter)
     else:
         system, user = assemble_prompt(node_id, state["pack"], context)
-        env = generate_json(system, user)
+        # 32K: reasoning models spend hidden thinking tokens inside this
+        # budget before the visible envelope — 16K truncated long sections.
+        env = generate_json(system, user, max_tokens=32768)
         env["section"] = letter
 
     if state.get("persist"):
