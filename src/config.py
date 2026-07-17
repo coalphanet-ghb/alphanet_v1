@@ -114,17 +114,34 @@ PREFLIGHT_TIMEOUT = 6            # seconds, requests pre-flight
 MACRO_FRESH_DAYS = 7
 SECTOR_FRESH_DAYS = 30
 
-# Domain tables (playbook §0)
+# Domain tables (playbook §0; extended per run post-mortems)
 TIER1_DOMAINS = [
     "bseindia.com", "screener.in", "researchbytes.com",
     "icra.in", "crisilratings.com", "careratings.com", "indiaratings.co.in",
     "siam.in", "fada.in", "acma.in", "rbi.org.in", "mospi.gov.in",
     "pib.gov.in", "ppac.gov.in", "imf.org", "worldbank.org",
+    "alphaspread.com", "trendlyne.com", "tijorifinance.com", "concall.in",
 ]
 BLOCKED_DOMAINS = [
     "nseindia.com",              # bot-hostile; BSE mirrors filings
     "facebook.com", "x.com", "twitter.com", "linkedin.com", "youtube.com",
+    "morningstar.com", "marketscreener.com", "gurufocus.com",  # transcript paywalls
+    "careratingtracker.com",     # agency index page, not rationales
 ]
+BLOCKED_URL_PATTERNS = [
+    "moneycontrol.com/financials",   # JS tables, unreadable
+]
+# legal databases: allowed ONLY for the litigation query (old cases pollute
+# news evidence otherwise)
+LEGAL_DOMAINS = ["indiankanoon.org", "casemine.com"]
+
+# learned domain scores (read_log outcomes accumulate here; >=2 failures
+# demotes the domain in s1 reranking)
+DOMAIN_SCORES_PATH = os.environ.get("DOMAIN_SCORES_PATH", "data/domain_scores.json")
+
+# reuse quality gates: a P1 document reused with fewer stored passages than
+# this gets re-read instead (thin early extractions self-heal)
+REUSE_MIN_PASSAGES = {"concall": 5, "annual_report": 10, "investor_presentation": 4}
 
 # --- Output --------------------------------------------------------------
 REPORTS_DIR = os.environ.get("REPORTS_DIR", "data/reports")

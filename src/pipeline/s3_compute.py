@@ -12,52 +12,8 @@ from datetime import date
 
 from src import db
 
-# --- canonical metric names (screener rows and common prints) ---------------
-_CANON = [
-    (("sales", "revenue from operations", "revenue", "total income"), "revenue"),
-    (("net profit", "profit after tax", "pat"), "net_profit"),
-    (("operating profit", "ebitda"), "operating_profit"),
-    (("opm", "operating margin", "ebitda margin"), "opm_pct"),
-    (("other income",), "other_income"),
-    (("interest", "finance cost"), "interest"),
-    (("depreciation", "amortisation"), "depreciation"),
-    (("profit before tax", "pbt"), "pbt"),
-    (("tax %", "tax rate", "tax_pct", "tax"), "tax_pct"),
-    (("eps",), "eps"),
-    (("equity capital", "share capital"), "equity_capital"),
-    (("reserves",), "reserves"),
-    (("borrowing", "debt", "total debt"), "borrowings"),
-    (("fixed assets", "net block", "property plant"), "fixed_assets"),
-    (("cwip", "capital work"), "cwip"),
-    (("investments",), "investments"),
-    (("cash equivalents", "cash and bank", "cash_"), "cash"),
-    (("cash from operating", "cash generated from operations", "cfo"), "cfo"),
-    (("cash from investing",), "cfi"),
-    (("cash from financing",), "cff"),
-    (("debtor days", "receivable days", "dso"), "debtor_days"),
-    (("inventory days", "dio"), "inventory_days"),
-    (("payable days", "days payable", "dpo"), "payable_days"),
-    (("cash conversion cycle", "ccc"), "ccc_days"),
-    (("roce",), "roce_pct"),
-    (("roe", "return on equity"), "roe_pct"),
-    (("stock p/e", "price to earning", "pe ratio", "p/e", "pe_"), "pe"),
-    (("book value",), "book_value"),
-    (("price to book", "p/b"), "pb"),
-    (("dividend yield",), "dividend_yield_pct"),
-    (("market cap",), "market_cap"),
-    (("current price", "cmp", "stock price"), "price"),
-    (("promoter holding", "promoters"), "promoter_holding_pct"),
-    (("pledged",), "promoter_pledge_pct"),
-    (("total assets",), "total_assets"),
-]
-
-
-def canon_name(raw: str) -> str | None:
-    r = (raw or "").lower().replace("-", " ").strip()
-    for keys, canon in _CANON:
-        if any(k in r for k in keys):
-            return canon
-    return None
+# canonical metric names live in the shared vocabulary module
+from src.ingestion.metric_names import canon_name  # noqa: E402
 
 
 # --- value & period parsing --------------------------------------------------
@@ -135,10 +91,68 @@ def parse_period(printed: str) -> dict | None:
     return None
 
 
+# --- dedup + authority priority (Phase 0.1) ----------------------------------
+# When the same (entity, metric, period) is extracted from multiple documents
+# we keep the most authoritative source. Consolidated screener financials are
+# the numeric backbone; a plain (standalone) screener page for the same period
+# must not shadow or mix into it (basis-mixing is a correctness bug per
+# ANALYST_KNOWLEDGE hygiene rules).
+_DOC_PRIORITY = {
+    "screener_consolidated": 100, "screener_page": 90, "results_pdf": 80,
+    "investor_presentation": 70, "annual_report": 60, "rating_rationale": 50,
+    "shareholding": 40,
+}
+
+
+def _obs_priority(doc_class: str, url: str) -> int:
+    if doc_class == "screener_page" and "/consolidated/" in (url or ""):
+        return _DOC_PRIORITY["screener_consolidated"]
+    return _DOC_PRIORITY.get(doc_class, 10)
+
+
+def _dedup_observations(rows: list[dict]) -> tuple[list[dict], int]:
+    """One observation per (entity, metric, period). Highest source priority
+    wins; equal-priority disagreements keep the last-seen and are counted so
+    the caller can surface a data-conflict insufficiency. Helper keys
+    (_doc_class/_url) are stripped from the returned rows."""
+    best: dict[tuple, tuple[int, dict]] = {}
+    conflicts = 0
+    for r in rows:
+        key = (r["entity_id"], r["metric_name"], r["period_start"], r["period_end"])
+        prio = _obs_priority(r.get("_doc_class"), r.get("_url"))
+        cur = best.get(key)
+        if cur is None:
+            best[key] = (prio, r)
+            continue
+        cprio, crow = cur
+        if prio > cprio:
+            best[key] = (prio, r)
+        elif prio == cprio:
+            cv, rv = crow.get("value") or 0.0, r.get("value") or 0.0
+            if abs(rv - cv) > 1e-6 + 0.005 * abs(cv):   # >0.5% relative = real conflict
+                conflicts += 1
+            best[key] = (prio, r)                        # deterministic: last-seen wins
+    out = []
+    for _, r in best.values():
+        r.pop("_doc_class", None)
+        r.pop("_url", None)
+        out.append(r)
+    return out, conflicts
+
+
 # --- series helpers ----------------------------------------------------------
+
+def _dedup_by_period(rows: list[dict]) -> list[dict]:
+    """Defensive: collapse any residual same-period_end rows (last wins)."""
+    by_pe: dict[str, dict] = {}
+    for o in rows:
+        by_pe[o["period_end"]] = o
+    return list(by_pe.values())
+
 
 def _series(obs: list[dict], name: str) -> list[dict]:
     s = [o for o in obs if o["metric_name"] == name and o["period_type"] == "year"]
+    s = _dedup_by_period(s)
     return sorted(s, key=lambda o: o["period_start"])
 
 
@@ -152,6 +166,10 @@ def _cagr(series: list[dict], years: int) -> dict | None:
     if len(series) < years + 1:
         return None
     a, b = series[-years - 1], series[-1]
+    # distinct endpoints required — a CAGR between identical periods (a
+    # duplicate-observation artefact) is meaningless, not "0%".
+    if a["period_end"] == b["period_end"]:
+        return None
     if not a["value"] or a["value"] <= 0 or b["value"] <= 0:
         return None
     val = ((b["value"] / a["value"]) ** (1 / years) - 1) * 100
@@ -196,7 +214,9 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
         try:
             name = canon_name(c.get("name", "")) or c.get("name", "").strip().lower().replace(" ", "_")
             parsed_v = parse_value(c.get("value_printed"), name)
-            parsed_p = parse_period(c.get("period_printed"))
+            # the screener parser supplies pre-typed periods (e.g. the
+            # point-in-time top-ratios card) as period_parsed
+            parsed_p = c.get("period_parsed") or parse_period(c.get("period_printed"))
         except Exception:
             skipped += 1
             continue
@@ -232,7 +252,18 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
         out.append({"entity_id": ent, "metric_name": name,
                     "value": parsed_v[0], "unit": parsed_v[1],
                     "source_document_id": c.get("source_document_id"),
+                    "_doc_class": c.get("doc_class"), "_url": url,
                     **parsed_p})
+
+    raw_count = len(out)
+    out, conflicts = _dedup_observations(out)
+    if raw_count != len(out):
+        print(f"  [s3] deduped {raw_count} -> {len(out)} observations "
+              f"(same metric+period from multiple sources)")
+    if conflicts:
+        insuff.append(f"{conflicts} metric(s) had conflicting values across "
+                      f"sources for the same period; kept the higher-authority "
+                      f"source — treat those figures with caution")
     if skipped:
         print(f"  [s3] {skipped} candidate(s) skipped (unparseable value/period/entity)")
     if not out:
@@ -407,6 +438,124 @@ def peer_table(company_id: str, company_label: str, peers: list[dict],
             "worst_cells": worst, "formula_id": "peer_table"}
 
 
+# --- statement tables, TTM, Piotroski (Phase 1.2) ---------------------------------
+
+_STATEMENT_ROWS = {
+    "pl_table": ["revenue", "total_expenses", "operating_profit", "opm_pct",
+                 "other_income", "interest", "depreciation", "pbt", "tax_pct",
+                 "net_profit", "eps", "dividend_payout_pct"],
+    "bs_table": ["equity_capital", "reserves", "borrowings", "other_liabilities",
+                 "total_liabilities", "fixed_assets", "cwip", "investments",
+                 "other_assets", "total_assets"],
+    "cf_table": ["cfo", "cfi", "cff", "net_cash_flow", "fcf", "cfo_to_op_pct"],
+}
+
+
+def statement_tables(obs: list[dict]) -> dict:
+    """Per-statement annual tables exposed as calc:pl_table / bs_table /
+    cf_table — the D-family nodes' numeric source (and Phase 4's feedstock)."""
+    out = {}
+    for table_id, metrics in _STATEMENT_ROWS.items():
+        periods: list[str] = []
+        rows: dict[str, list] = {}
+        inputs: list[str] = []
+        for m in metrics:
+            s = _series(obs, m)
+            if not s:
+                continue
+            for o in s:
+                if o["period_end"] not in periods:
+                    periods.append(o["period_end"])
+            rows[m] = s
+            inputs += [o["id"] for o in s]
+        periods.sort()
+        if rows:
+            out[table_id] = {
+                "periods": periods,
+                "rows": {m: {p: next((o["value"] for o in s if o["period_end"] == p), None)
+                             for p in periods}
+                         for m, s in rows.items()},
+                "unit_note": "inr_crore unless metric name ends _pct/_days",
+                "inputs": inputs,
+            }
+    return out
+
+
+def _quarter_series(obs: list[dict], name: str) -> list[dict]:
+    s = [o for o in obs if o["metric_name"] == name and o["period_type"] == "quarter"]
+    by_pe = {o["period_end"]: o for o in s}
+    return sorted(by_pe.values(), key=lambda o: o["period_end"])
+
+
+def ttm_metrics(obs: list[dict]) -> tuple[dict, list[str]]:
+    """Sum of the last 4 DISTINCT quarters for flow metrics + TTM margin."""
+    cf, insuff = {}, []
+    parts = {}
+    for m in ("revenue", "net_profit", "operating_profit"):
+        q = _quarter_series(obs, m)
+        if len(q) < 4:
+            insuff.append(f"TTM {m}: needs 4 quarters, have {len(q)}")
+            continue
+        last4 = q[-4:]
+        parts[m] = last4
+        cf[f"{m}_ttm"] = {"value": round(sum(o["value"] for o in last4), 0),
+                          "unit": "inr_crore",
+                          "quarters": [o["period_end"] for o in last4],
+                          "inputs": [o["id"] for o in last4]}
+    if "revenue" in parts and "operating_profit" in parts and cf["revenue_ttm"]["value"]:
+        cf["ebitda_margin_ttm"] = {
+            "value": round(cf["operating_profit_ttm"]["value"] /
+                           cf["revenue_ttm"]["value"] * 100, 1),
+            "unit": "percent",
+            "inputs": cf["revenue_ttm"]["inputs"] + cf["operating_profit_ttm"]["inputs"]}
+    return cf, insuff
+
+
+def piotroski_components(obs: list[dict]) -> dict | None:
+    """Computable subset of the 9-point battery; components itemized,
+    composite labeled partial. Screen, not verdict."""
+    comps = []
+
+    def add(name, ok, inputs, note=""):
+        comps.append({"name": name, "pass": bool(ok), "inputs": inputs, "note": note})
+
+    np_s, ta = _series(obs, "net_profit"), _series(obs, "total_assets")
+    cfo_s = _series(obs, "cfo")
+    if np_s and ta and ta[-1]["value"]:
+        roa_now = np_s[-1]["value"] / ta[-1]["value"]
+        add("F1 ROA > 0", roa_now > 0, [np_s[-1]["id"], ta[-1]["id"]])
+        if len(np_s) >= 2 and len(ta) >= 2 and ta[-2]["value"]:
+            add("F3 ROA improving", roa_now > np_s[-2]["value"] / ta[-2]["value"],
+                [np_s[-2]["id"], ta[-2]["id"]])
+    if cfo_s:
+        add("F2 CFO > 0", cfo_s[-1]["value"] > 0, [cfo_s[-1]["id"]])
+    if cfo_s and np_s and cfo_s[-1]["period_end"] == np_s[-1]["period_end"]:
+        add("F4 CFO > PAT (accruals)", cfo_s[-1]["value"] > np_s[-1]["value"],
+            [cfo_s[-1]["id"], np_s[-1]["id"]])
+    b = _series(obs, "borrowings")
+    if len(b) >= 2 and len(ta) >= 2 and ta[-1]["value"] and ta[-2]["value"]:
+        add("F5 leverage down", b[-1]["value"] / ta[-1]["value"] <=
+            b[-2]["value"] / ta[-2]["value"], [b[-1]["id"], b[-2]["id"]])
+    eqc = _series(obs, "equity_capital")
+    if len(eqc) >= 2:
+        add("F7 no dilution", eqc[-1]["value"] <= eqc[-2]["value"] * 1.005,
+            [eqc[-1]["id"], eqc[-2]["id"]])
+    opm = _series(obs, "opm_pct")
+    if len(opm) >= 2:
+        add("F8 margin up", opm[-1]["value"] >= opm[-2]["value"],
+            [opm[-1]["id"], opm[-2]["id"]])
+    rev = _series(obs, "revenue")
+    if len(rev) >= 2 and len(ta) >= 2 and ta[-1]["value"] and ta[-2]["value"]:
+        add("F9 asset turnover up", rev[-1]["value"] / ta[-1]["value"] >=
+            rev[-2]["value"] / ta[-2]["value"], [rev[-1]["id"], ta[-1]["id"]])
+    if not comps:
+        return None
+    return {"score": sum(1 for c in comps if c["pass"]), "of": len(comps),
+            "note": "partial battery (F6 current ratio not derivable from "
+                    "screener aggregates); screen, not verdict",
+            "components": comps}
+
+
 # --- node ------------------------------------------------------------------------
 
 def compute_node(state) -> dict:
@@ -418,13 +567,26 @@ def compute_node(state) -> dict:
     normalized, ins0 = validate_candidates(state)
     insufficiencies += ins0
 
-    # persist observations + collect (with row ids for lineage)
+    # persist observations (bulk — a parsed screener page yields hundreds)
+    # then attach row ids for lineage by re-fetching per entity
     obs_by_entity: dict[str, list] = {}
-    for n in normalized:
-        row_id = None
-        if persist:
-            row_id = db.save_metric_observation(**n)
-        rec = {**n, "id": row_id or f"mem_{len(obs_by_entity)}_{n['metric_name']}_{n['period_end']}"}
+    if persist and normalized:
+        try:
+            db.bulk_save_metric_observations(normalized)
+            id_map = {}
+            for eid in {n["entity_id"] for n in normalized}:
+                for row in db.get_metric_observations(eid):
+                    id_map[(row["entity_id"], row["metric_name"],
+                            row["period_start"], row["period_end"])] = row["id"]
+        except Exception as e:
+            print(f"  [s3][warn] bulk observation persist failed ({e}) — "
+                  f"continuing with in-memory ids")
+            id_map = {}
+    else:
+        id_map = {}
+    for i, n in enumerate(normalized):
+        key = (n["entity_id"], n["metric_name"], n["period_start"], n["period_end"])
+        rec = {**n, "id": id_map.get(key) or f"mem_{i}_{n['metric_name']}_{n['period_end']}"}
         obs_by_entity.setdefault(n["entity_id"], []).append(rec)
 
     company_id = profile.get("entity_id", "company")
@@ -442,7 +604,9 @@ def compute_node(state) -> dict:
         cn = _cagr(np_s, years)
         if cn:
             cf[f"net_profit_cagr_{years}y"] = cn
-    if len(rev) >= 2 and rev[-2]["value"]:
+    # YoY needs two DISTINCT annual periods — never divide a period by itself
+    if (len(rev) >= 2 and rev[-2]["value"]
+            and rev[-1]["period_end"] != rev[-2]["period_end"]):
         cf["revenue_yoy"] = {"value": round((rev[-1]["value"] / rev[-2]["value"] - 1) * 100, 1),
                              "unit": "percent", "to": rev[-1]["period_end"],
                              "inputs": [rev[-2]["id"], rev[-1]["id"]]}
@@ -451,9 +615,16 @@ def compute_node(state) -> dict:
         s = _series(obs, name) or ([_latest(obs, name)] if _latest(obs, name) else [])
         s = [x for x in s if x]
         if s:
+            n_periods = len({o["period_end"] for o in s})
             cf[f"{name}_series"] = {"points": [{"period": o["period_end"], "value": o["value"]}
                                                for o in s[-6:]],
-                                    "unit": s[-1]["unit"], "inputs": [o["id"] for o in s[-6:]]}
+                                    "unit": s[-1]["unit"], "n_periods": n_periods,
+                                    "single_point": n_periods < 2,
+                                    "inputs": [o["id"] for o in s[-6:]]}
+            if n_periods < 2:
+                insufficiencies.append(
+                    f"{name}: only a single period observed — a point value, "
+                    f"not a trend (needs multi-year history)")
     # margins/net margin
     if rev and np_s and rev[-1]["value"]:
         pairs = [(r, n) for r in rev for n in np_s if r["period_end"] == n["period_end"]]
@@ -486,6 +657,15 @@ def compute_node(state) -> dict:
                 cf["cfo_to_pat"] = {"points": vals, "unit": "x",
                                     "median": sorted(vals)[len(vals) // 2],
                                     "inputs": [x["id"] for pr in pairs[-5:] for x in pr]}
+
+    # Phase 1.2: TTM from quarterly prints, per-statement tables, Piotroski
+    ttm, ins_ttm = ttm_metrics(obs)
+    cf.update(ttm)
+    insufficiencies += ins_ttm
+    cf.update(statement_tables(obs))
+    pio = piotroski_components(obs)
+    if pio:
+        cf["piotroski_components"] = pio
 
     flags, ins1 = forensic_battery(obs)
     insufficiencies += ins1

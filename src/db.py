@@ -146,6 +146,30 @@ def get_evidence_for_document(source_document_id: str) -> List[dict]:
     return rows.data or []
 
 
+def get_layer_evidence(layer: str, limit: int = 80) -> List[dict]:
+    """All stored evidence for a research layer ('macro'/'industry'), joined
+    with its document's url/title/doc_class. Used to REHYDRATE a fresh layer
+    that was skipped for re-reading — freshness must mean 'don't re-fetch',
+    never 'run without the data' (Phase 0.3)."""
+    client = get_client()
+    docs = (client.table("source_documents")
+            .select("id, title, url_or_path, metadata")
+            .filter("metadata->>layer", "eq", layer)
+            .order("ingested_at", desc=True).limit(40).execute()).data or []
+    out: List[dict] = []
+    for d in docs:
+        doc_class = (d.get("metadata") or {}).get("doc_class", f"{layer}_page")
+        rows = (client.table("evidence").select("id, text, page_or_timestamp")
+                .eq("source_document_id", d["id"]).order("created_at").execute()).data or []
+        for r in rows:
+            out.append({"id": r["id"], "text": r["text"],
+                        "url": d.get("url_or_path"), "title": d.get("title"),
+                        "doc_class": doc_class, "page": r.get("page_or_timestamp")})
+            if len(out) >= limit:
+                return out
+    return out
+
+
 def link_evidence_entities(evidence_id: str, entity_ids: List[str]) -> None:
     if not entity_ids:
         return
@@ -190,6 +214,27 @@ def save_metric_observation(entity_id: str, metric_name: str, period_type: str,
         "source_document_id": source_document_id,
     }).execute()
     return inserted.data[0]["id"]
+
+
+def bulk_save_metric_observations(rows: List[dict]) -> None:
+    """Upsert many observations in chunks against the (entity, metric,
+    period) unique constraint. Existing rows are left untouched (observed
+    facts are append-only); callers re-fetch to obtain row ids."""
+    if not rows:
+        return
+    client = get_client()
+    payload = [{"entity_id": r["entity_id"], "metric_name": r["metric_name"],
+                "period_type": r["period_type"], "period_start": r["period_start"],
+                "period_end": r["period_end"], "value": r["value"],
+                "unit": r.get("unit"),
+                "source_document_id": r.get("source_document_id")}
+               for r in rows]
+    for i in range(0, len(payload), 400):
+        client.table("metric_observations").upsert(
+            payload[i:i + 400],
+            on_conflict="entity_id,metric_name,period_start,period_end",
+            ignore_duplicates=True,
+        ).execute()
 
 
 def get_metric_observations(entity_id: str,

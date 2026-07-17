@@ -63,17 +63,27 @@ def _pool(state, key, cap=30) -> str:
 
 
 def _envelope_summary(env: dict, max_chars=4000) -> str:
+    """Upstream findings, each labelled with the exact citation form the
+    reader must use (sec:<LETTER>.<block_id>) — models were citing these
+    numbers to evidence uuids they never read (Phase 2.1/3b)."""
     if not env:
         return "(missing)"
+    letter = env.get("section", "?")
     parts = []
     for b in env.get("blocks", []):
+        ref = f"sec:{letter}.{b.get('id')}"
         if b.get("type") == "narrative":
-            parts.append(f"[{b.get('id')}] {b.get('md', '')}")
+            parts.append(f"[{ref}] {b.get('md', '')}")
         elif b.get("type") == "ranked_list":
             for it in b.get("items", []):
-                parts.append(f"#{it.get('rank')} {it.get('title')}: {it.get('md', '')}")
+                parts.append(f"[{ref}] #{it.get('rank')} {it.get('title')}: "
+                             f"{it.get('md', '')}")
         elif b.get("type") == "flag":
-            parts.append(f"FLAG({b.get('status')}) {b.get('md', '')}")
+            parts.append(f"[{ref}] FLAG({b.get('status')}) {b.get('md', '')}")
+        elif b.get("type") == "metric_card":
+            for m in b.get("metrics", []):
+                parts.append(f"[{ref}] {m.get('name')}: {m.get('value')} "
+                             f"{m.get('unit', '')} ({m.get('period', '')})")
     return "\n".join(parts)[:max_chars] or "(empty)"
 
 

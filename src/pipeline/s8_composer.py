@@ -56,9 +56,12 @@ def _snapshot(state) -> list[str]:
         hit = skpis.get(vital["metric_id"])
         if not hit:
             calc_key = vital["calc"].split(".")[-1]
-            for k in (vital["metric_id"], calc_key, f"{calc_key}_series"):
+            names = [vital["metric_id"], calc_key]
+            names += [f"{n}{suffix}" for n in (vital["metric_id"], calc_key)
+                      for suffix in ("_series", "_pct_series", "_ttm", "_pct")]
+            for k in dict.fromkeys(names):    # de-dup, keep order
                 c = cf.get(k)
-                if c:
+                if c and isinstance(c, dict) and ("points" in c or "value" in c):
                     hit = ({"value": c["points"][-1]["value"], "unit": c.get("unit")}
                            if "points" in c else c)
                     break
@@ -93,6 +96,9 @@ def _render_block(b: dict, resolve) -> list[str]:
                                              else str(c if c is not None else "—")
                                              for c in row) + " |")
     elif t == "ranked_list":
+        if b.get("title"):      # J rendered 3 untitled lists back-to-back
+            out.append(f"**{b['title']}**")
+            out.append("")
         for it in b.get("items", []):
             sev = f" `{it['severity']}`" if it.get("severity") else ""
             out.append(f"{it.get('rank','-')}. **{it.get('title','')}**{sev} — {it.get('md','')}")
@@ -101,8 +107,10 @@ def _render_block(b: dict, resolve) -> list[str]:
     elif t == "flag":
         icon = {"OK": "✅", "WATCH": "⚠️", "FLAG": "🚩"}.get(b.get("status", ""), "•")
         out.append(f"> {icon} **{b.get('check','')}** [{b.get('status')}] {b.get('md','')}")
-    cites = b.get("citations") or b.get("provenance") or []
-    bad = [c for c in cites if not resolve(c)]
+    cites = list(b.get("citations") or []) + list(b.get("provenance") or [])
+    if t == "metric_card":      # per-metric provenance was escaping the check
+        cites += [m["provenance"] for m in b.get("metrics", []) if m.get("provenance")]
+    bad = [c for c in dict.fromkeys(str(c) for c in cites) if not resolve(c)]
     if bad:
         out.append(f"> ⚠️ *unresolved citation(s): {', '.join(str(x) for x in bad)}*")
     out.append("")
@@ -116,15 +124,39 @@ def composer_node(state) -> dict:
         "peer_table", "valuation_context", "guidance_scorecard"} | {
         f"forensic.{f['check']}" for f in comp.get("forensic_flags", [])}
 
+    # every block id from every section is citable as sec:<LETTER>.<block_id>
+    block_ids = set()
+    for letter in "BCDEFGHIJ":
+        env = state.get(f"envelope_{letter}") or {}
+        for b in env.get("blocks", []):
+            if b.get("id"):
+                block_ids.add(f"{letter}.{b['id']}")
+                block_ids.add(str(b["id"]))
+    # 8+ hex chars uniquely identify an evidence row in practice
+    prefix_index: dict[str, int] = {}
+    for e in evidence_ids:
+        prefix_index[str(e)[:8]] = prefix_index.get(str(e)[:8], 0) + 1
+
     stats = {"total": 0, "unresolved": 0}
 
     def resolve(cite) -> bool:
         stats["total"] += 1
-        c = str(cite)
-        ok = (c in evidence_ids or _UUID_RE.match(c) and c in evidence_ids or
-              (c.startswith("calc:") and (c[5:] in calc_ids or
-                                          c[5:].split(".")[0] in calc_ids)) or
-              c.startswith("mem_"))
+        c = str(cite).strip()
+        ok = False
+        if c in evidence_ids or c.startswith("mem_"):
+            ok = True
+        elif c.startswith("calc:"):
+            body = c[5:]
+            ok = body in calc_ids or body.split(".")[0] in calc_ids
+        elif c.startswith("sec:"):
+            body = c[4:]
+            ok = body in block_ids or body.split(".", 1)[-1] in block_ids
+        elif c.startswith("evidence:"):
+            ok = c.split(":", 1)[1] in evidence_ids
+        elif c in block_ids:
+            ok = True                       # bare upstream block id
+        elif re.fullmatch(r"[0-9a-f]{8,}", c):
+            ok = prefix_index.get(c[:8], 0) == 1    # unique uuid prefix
         if not ok:
             stats["unresolved"] += 1
         return bool(ok)

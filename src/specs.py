@@ -32,14 +32,33 @@ STRICT JSON envelope:
  "claims": [{"text":"<one factual sentence>","evidence_ids":["<evidence-uuid>"],"confidence":0.9}],
  "insufficiencies": ["<what was missing and which source class would supply it>"]}
 
+CITATION FORMS (use exactly these; anything else fails resolution):
+  - "<evidence-uuid>"        a passage from the supplied evidence
+  - "calc:<formula_id>"      a value from the computed tables
+  - "sec:<LETTER>.<block_id>"  a finding established by an upstream section
+    (upstream blocks are shown to you already labelled, e.g.
+    [sec:D.d1_margin_analysis] — cite that label verbatim)
+Never invent shorthand (e.g. "[E-Summary]", "evidence 3d11") and never cite
+an evidence uuid you were not given.
+
 NON-NEGOTIABLE RULES:
 1. Use ONLY the supplied context. A fact not in context does not exist.
    Gaps go in insufficiencies, never filled from your own knowledge.
 2. NO arithmetic. Every number comes from supplied evidence (cite its
    uuid) or computed tables (cite calc:<formula_id>). Never derive, sum,
-   average, annualize, or convert units yourself.
+   average, annualize, or compute growth yourself.
+2b. NO UNIT CONVERSION. Quote every figure in the unit it is given in
+   (Rs crore stays crore; a "Rs 237 billion" quote stays billion). Never
+   convert between crore / billion / million / lakh — converting is the
+   compute layer's job, and hand-converted figures have contradicted each
+   other across sections.
 3. Every block carries citations. Every claim carries resolvable
-   evidence_ids (claims cite evidence uuids only, not calc ids).
+   evidence_ids (claims cite evidence uuids ONLY — not calc: or sec: ids;
+   a claim whose support is a computed value belongs in a block, not in
+   claims[]).
+3b. A number you take from an upstream section must be cited as
+   sec:<LETTER>.<block_id> — never re-attribute it to an evidence uuid you
+   did not read it in.
 4. Every number is stated with its period (FY26/Q3FY26/TTM) and basis
    (consolidated/standalone) exactly as given.
 5. NO recommendations, target prices, or verdict vocabulary

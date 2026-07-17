@@ -3,13 +3,16 @@ S1 — URL discovery (deterministic: ddgs + rerank + pre-flight, zero LLM).
 Spec: nodes/s1_discover. Emits the url_plan s2 executes.
 """
 
+import json
+import os
 import time
 from urllib.parse import urlparse
 
 import requests
 
 from src.config import (
-    TIER1_DOMAINS, BLOCKED_DOMAINS, MAX_READ_CALLS, MAX_URLS_MACRO,
+    TIER1_DOMAINS, BLOCKED_DOMAINS, BLOCKED_URL_PATTERNS, LEGAL_DOMAINS,
+    DOMAIN_SCORES_PATH, MAX_READ_CALLS, MAX_URLS_MACRO,
     MAX_URLS_SECTOR, PREFLIGHT_TIMEOUT, MAX_RESULTS_DATA,
 )
 from src.pipeline.query_banks import (
@@ -19,6 +22,47 @@ from src.pipeline.query_banks import (
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (research-preflight)"}
 
+# outcomes that mean "this domain wasted an LLM call"
+_BAD_OUTCOMES = {"unreadable", "parse_failed", "deadline"}
+_DEMOTE_AFTER = 2
+
+
+def load_domain_scores() -> dict:
+    """{domain: {"ok": n, "bad": n}} accumulated across runs (playbook §0:
+    domains that repeatedly fail url_context get demoted automatically)."""
+    try:
+        with open(DOMAIN_SCORES_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def update_domain_scores(read_log: list[dict]) -> None:
+    scores = load_domain_scores()
+    for entry in read_log or []:
+        url = entry.get("url")
+        if not url or url.startswith("internal://"):
+            continue
+        d = _domain(url)
+        if not d:
+            continue
+        rec = scores.setdefault(d, {"ok": 0, "bad": 0})
+        if entry.get("outcome") in _BAD_OUTCOMES:
+            rec["bad"] += 1
+        elif entry.get("outcome") in ("read", "parsed", "reused"):
+            rec["ok"] += 1
+    try:
+        os.makedirs(os.path.dirname(DOMAIN_SCORES_PATH) or ".", exist_ok=True)
+        with open(DOMAIN_SCORES_PATH, "w", encoding="utf-8") as f:
+            json.dump(scores, f, indent=2, sort_keys=True)
+    except OSError as e:
+        print(f"  [s1][warn] could not persist domain scores: {e}")
+
+
+def _demoted(scores: dict) -> set:
+    return {d for d, r in scores.items()
+            if r.get("bad", 0) >= _DEMOTE_AFTER and r.get("bad", 0) > r.get("ok", 0)}
+
 
 def _domain(url: str) -> str:
     try:
@@ -27,35 +71,53 @@ def _domain(url: str) -> str:
         return ""
 
 
-def _tier(url: str) -> int:
+def _tier(url: str, allow_legal: bool = False, demoted: set = frozenset()) -> int:
+    """0 = tier-1 authority, 1 = ordinary, 2 = learned-unreliable, 99 = blocked."""
     d = _domain(url)
+    low = (url or "").lower()
+    if any(p in low for p in BLOCKED_URL_PATTERNS):
+        return 99
     if any(d.endswith(b) for b in BLOCKED_DOMAINS):
         return 99
+    if any(d.endswith(x) for x in LEGAL_DOMAINS) and not allow_legal:
+        return 99      # legal DBs pollute news; only the litigation query wants them
+    if d in demoted:
+        return 2
     if any(d.endswith(t) for t in TIER1_DOMAINS):
         return 0
     return 1
 
 
-def _search(queries: list, seen: set) -> list[dict]:
-    """queries: [(query, doc_class, n_results)] -> reranked url dicts."""
+def _search(queries: list, seen: set, timelimit: str | None = None,
+            allow_legal: bool = False) -> list[dict]:
+    """queries: [(query, doc_class, n_results)] -> reranked url dicts.
+    timelimit: ddgs recency filter ('m' = past month for news, 'y' = past
+    year for document hunts) — ddgs has no date field worth trusting."""
     from ddgs import DDGS
+    scores = load_domain_scores()
+    demoted = _demoted(scores)
     buckets = []
     with DDGS() as ddgs:
         for query, doc_class, n in queries:
             try:
-                results = list(ddgs.text(query, region="in-en", max_results=n))
+                kw = {"region": "in-en", "max_results": n}
+                if timelimit:
+                    kw["timelimit"] = timelimit
+                results = list(ddgs.text(query, **kw))
             except Exception as e:
                 print(f"  [s1][warn] search failed '{query}': {e}")
                 continue
             bucket = []
             for r in results:
                 url = r.get("href") or r.get("url")
-                if not url or url in seen or _tier(url) == 99:
+                if not url or url in seen:
+                    continue
+                t = _tier(url, allow_legal=allow_legal, demoted=demoted)
+                if t == 99:
                     continue
                 seen.add(url)
                 bucket.append({"url": url, "title": r.get("title", "untitled"),
-                               "doc_class": doc_class, "query": query,
-                               "tier": _tier(url)})
+                               "doc_class": doc_class, "query": query, "tier": t})
             bucket.sort(key=lambda x: x["tier"])
             buckets.append(bucket)
             time.sleep(1)
@@ -113,32 +175,75 @@ def discover_node(state) -> dict:
         reads.append({"target": "peer_screeners", "doc_class": "screener_page",
                       "priority": 2, "urls": peer_urls, "batch": True})
 
-    # --- concalls: one search per quarter (latest 2 = P1, older = P2)
-    for i, qq in enumerate(plan["quarters"]):
-        qslots = dict(slots, q=qq["q"], fy=qq["fy"])
-        queries = [(t.format(**qslots), "concall", 5) for t in CONCALL_QUERY_TEMPLATES[:1]]
-        found = _search(queries, seen)
-        if found:
-            reads.append({"target": f"concall_{qq['q']}{qq['fy']}", "doc_class": "concall",
-                          "priority": 1 if i < 2 else 2, "urls": [found[0]["url"]],
-                          "batch": False, "title": found[0]["title"]})
-        else:
-            print(f"  [s1] no transcript found for {qq['q']}{qq['fy']}")
+    # --- concalls + AR: screener's Documents links are authoritative (BSE
+    # PDFs) and replace ddgs hunting entirely when available (Phase 1)
+    from src.config import CONCALL_QUARTERS
+    ar_covered = False
+    transcripts = []
+    try:
+        from src.ingestion.screener_parser import get_document_links
+        links = get_document_links(profile["screener_slug"])
+        transcripts = links.get("concall_transcripts", [])[:CONCALL_QUARTERS]
+        ars = links.get("annual_reports", [])
+        if ars:
+            reads.append({"target": "annual_report", "doc_class": "annual_report",
+                          "priority": 1, "urls": [ars[0]["url"]], "batch": False,
+                          "title": f"Annual report ({ars[0]['label']})"})
+            seen.add(ars[0]["url"])
+            ar_covered = True
+    except Exception as e:
+        print(f"  [s1] screener doc links unavailable ({e}) — using ddgs for "
+              f"transcripts/AR")
+
+    if transcripts:
+        for i, t in enumerate(transcripts):
+            reads.append({"target": f"concall_{t['label'] or i}", "doc_class": "concall",
+                          "priority": 1 if i < 2 else 2, "urls": [t["url"]],
+                          "batch": False,
+                          "title": f"Concall transcript ({t['label']})"})
+            seen.add(t["url"])
+        print(f"  [s1] {len(transcripts)} concall transcripts via screener doc links")
+    else:
+        for i, qq in enumerate(plan["quarters"]):
+            qslots = dict(slots, q=qq["q"], fy=qq["fy"])
+            queries = [(t.format(**qslots), "concall", 5) for t in CONCALL_QUERY_TEMPLATES[:1]]
+            found = _search(queries, seen, timelimit="y")
+            if found:
+                reads.append({"target": f"concall_{qq['q']}{qq['fy']}", "doc_class": "concall",
+                              "priority": 1 if i < 2 else 2, "urls": [found[0]["url"]],
+                              "batch": False, "title": found[0]["title"]})
+            else:
+                print(f"  [s1] no transcript found for {qq['q']}{qq['fy']}")
 
     # --- company docs
     for tmpl, doc_class, prio, n in COMPANY_DOC_QUERIES:
-        found = _search([(tmpl.format(**slots), doc_class, n)], seen)
+        if doc_class == "annual_report" and ar_covered:
+            continue
+        found = _search([(tmpl.format(**slots), doc_class, n)], seen, timelimit="y")
         if found:
             take = 1 if doc_class != "shareholding" else 1
             reads.append({"target": doc_class, "doc_class": doc_class,
                           "priority": prio, "urls": [f["url"] for f in found[:take]],
                           "batch": False, "title": found[0]["title"]})
 
-    # --- company news (batched 3/call)
-    news_urls = _search([(t.format(**slots), dc, n) for t, dc, p, n in COMPANY_NEWS_QUERIES[:3]], seen)
+    # --- company news (batched 3/call). Past-month only: stale hits were
+    # polluting the pool (a 2023 trademark judgment became a "moat").
+    news_urls = _search([(t.format(**slots), dc, n)
+                         for t, dc, p, n in COMPANY_NEWS_QUERIES[:2]],
+                        seen, timelimit="m")
     for i in range(0, min(len(news_urls), 6), 3):
         reads.append({"target": f"news_{i//3}", "doc_class": "news_batch", "priority": 2,
                       "urls": [u["url"] for u in news_urls[i:i+3]], "batch": True})
+
+    # --- litigation: the ONLY query allowed to surface legal databases
+    lit_t, lit_dc, _, lit_n = COMPANY_NEWS_QUERIES[2]
+    lit = _search([(lit_t.format(**slots), lit_dc, lit_n)], seen,
+                  timelimit="y", allow_legal=True)
+    if lit:
+        reads.append({"target": "litigation", "doc_class": "news_batch",
+                      "priority": 2, "urls": [u["url"] for u in lit[:2]],
+                      "batch": True, "title": "Litigation / regulatory action"})
+
     vp = _search([(COMPANY_NEWS_QUERIES[3][0].format(**slots), "valuepickr", MAX_RESULTS_DATA)], seen)
     if vp:
         reads.append({"target": "valuepickr", "doc_class": "valuepickr", "priority": 3,

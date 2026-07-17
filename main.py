@@ -47,6 +47,10 @@ def main():
                              "only; document reads stay on Gemini")
     parser.add_argument("--ticker", default=None)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--reingest", action="store_true",
+                        help="ignore stored extractions and re-read every "
+                             "company document (use after extraction-prompt "
+                             "or model upgrades; costs a full read budget)")
     args = parser.parse_args()
 
     if args.mode == "high":
@@ -84,17 +88,26 @@ def main():
     state = {
         "dry_run": args.dry_run,
         "persist": persist,
+        "reingest": args.reingest,
         "run_id": run_id,
         "profile": dict(company),
         "pack": {},
         "peer_entities": [],
     }
+    if args.reingest:
+        print("REINGEST: stored extractions ignored; every document re-read.\n")
 
     def _mark_failed(reason: str):
+        # Must NEVER raise: if the network is down, the Supabase write fails
+        # too and would mask the real error with its own traceback.
         if persist:
-            from src import db
-            db.finish_run(run_id, "failed", model_used=get_active_model(),
-                          error_message=reason[:2000])
+            try:
+                from src import db
+                db.finish_run(run_id, "failed", model_used=get_active_model(),
+                              error_message=reason[:2000])
+            except Exception as e:
+                print(f"  [warn] could not mark run failed in DB "
+                      f"(network down?): {e}")
 
     from src.llm import ModelOverloadedError, LLMError, calls_made
     app = build_graph()
@@ -113,6 +126,12 @@ def main():
         parser.exit(130, "\nInterrupted — run marked as failed. Rerunning is safe.\n")
     except Exception as e:
         _mark_failed(str(e))
+        text = f"{type(e).__name__}: {e}"
+        if any(t in text for t in ("getaddrinfo", "ConnectError", "ConnectTimeout",
+                                   "NameResolutionError", "Connection aborted")):
+            parser.exit(1, f"\nStopped: network connection lost mid-run.\n({text[:300]})\n"
+                           f"Nothing is broken — check your connection and rerun. "
+                           f"Everything already ingested is reused for free.\n")
         raise
 
     if persist:

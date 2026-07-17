@@ -1,0 +1,58 @@
+{
+  "auto.economictimes.indiatimes.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "bseindia.com": {
+    "bad": 0,
+    "ok": 10
+  },
+  "cablecommunity.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "casemine.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "financialexpress.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "indiankanoon.org": {
+    "bad": 0,
+    "ok": 1
+  },
+  "moneycontrol.com": {
+    "bad": 1,
+    "ok": 0
+  },
+  "renewablemirror.com": {
+    "bad": 0,
+    "ok": 2
+  },
+  "sahi.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "scanx.trade": {
+    "bad": 0,
+    "ok": 1
+  },
+  "screener.in": {
+    "bad": 0,
+    "ok": 11
+  },
+  "tijorifinance.com": {
+    "bad": 0,
+    "ok": 2
+  },
+  "trendlyne.com": {
+    "bad": 0,
+    "ok": 5
+  },
+  "whalesbook.com": {
+    "bad": 0,
+    "ok": 2
+  }
+}

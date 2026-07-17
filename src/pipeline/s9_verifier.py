@@ -18,10 +18,17 @@ pair below, judge ONLY from the evidence excerpts provided:
 - "contradicted": the excerpts state otherwise
 No world knowledge. No rounding forgiveness on numbers: a claim of 18.2%
 against evidence saying "about 18%" is "partial".
+
+Each excerpt is preceded by its SOURCE metadata (document class, title,
+page/timestamp). That metadata is part of the evidence: if a claim says
+"in the Q4 FY26 concall" and the excerpt comes from a document titled
+"Concall transcript (May 2026)" for that quarter, the attribution IS
+supported — do not mark it partial merely because the body text omits the
+quarter. Judge the substance against text + metadata together.
 Return ONLY JSON: {"verdicts": [{"idx": <int>, "verdict": "<one of the four>", "note": "<=20 words"}]}"""
 
 _BATCH = 20
-_MAX_CALLS = 4
+_MAX_CALLS = 8      # paid model: verification is the cheapest quality lever
 
 
 def verifier_node(state) -> dict:
@@ -29,15 +36,29 @@ def verifier_node(state) -> dict:
         print("[s9_verifier] DRY RUN — skipped")
         return {"verification": {}}
 
-    ev_text = {e["id"]: e["text"] for e in state.get("evidence_pool", [])}
+    # Phase 2.5: excerpts carry their document metadata — most "partial"
+    # verdicts were the verifier not knowing WHICH concall/date an excerpt
+    # came from, and penalising correct attributions.
+    ev_by_id = {e["id"]: e for e in state.get("evidence_pool", [])}
+
+    def _excerpt(eid: str) -> str:
+        e = ev_by_id[eid]
+        meta = f"[SOURCE: {e.get('doc_class', '?')}"
+        if e.get("title"):
+            meta += f" | {e['title']}"
+        if e.get("page"):
+            meta += f" | {e['page']}"
+        meta += "]"
+        return f"{meta}\n{e['text'][:600]}"
+
     tasks = []
     for letter in "BCDEFGHIJ":
         env = state.get(f"envelope_{letter}") or {}
         for c in env.get("claims", []):
-            ids = [i for i in c.get("evidence_ids", []) if i in ev_text]
+            ids = [i for i in c.get("evidence_ids", []) if i in ev_by_id]
             if ids:
                 tasks.append({"letter": letter, "claim": c,
-                              "evidence": [ev_text[i][:600] for i in ids[:3]]})
+                              "evidence": [_excerpt(i) for i in ids[:3]]})
     if not tasks:
         print("[s9_verifier] no evidence-cited claims to verify")
         return {"verification": {}}

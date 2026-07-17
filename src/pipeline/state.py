@@ -14,6 +14,7 @@ class ReportState(TypedDict):
     dry_run: bool
     run_id: str
     persist: bool                       # Supabase configured & not dry-run
+    reingest: NotRequired[bool]         # --reingest: ignore stored extractions
 
     # s0_resolve
     profile: dict                       # company profile (config entry + entity ids)
@@ -33,6 +34,7 @@ class ReportState(TypedDict):
     peer_mentions: NotRequired[List[str]]
     events: NotRequired[List[dict]]
     read_log: NotRequired[List[dict]]           # per-URL outcome (reused/read/failed)
+    screener_doc_links: NotRequired[dict]       # url -> {concall_transcripts, annual_reports}
 
     # s3_compute
     computed: NotRequired[dict]         # {computed_financials, forensic_flags, guidance_scorecard, peer_table, valuation_context, insufficiencies}
