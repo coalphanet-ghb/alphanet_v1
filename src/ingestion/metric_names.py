@@ -78,6 +78,32 @@ CANON = [
 CANON_NAMES = frozenset(c for _, c in CANON)
 
 
+# --- unit-class guard (Phase 3) ---------------------------------------------
+# Extraction now emits canon-NAMED candidates straight from AR/IP/concall
+# text, and models sometimes attach a canon name to a related-but-different
+# quantity ("order book: 70% EV-linked" -> order_book = 70 percent; revenue
+# from >10% customers in Rs mn -> customer_concentration = 7894 inr_crore).
+# A canon KPI therefore declares its expected unit CLASS and the validation
+# gate drops mismatches: wrong numbers are worse than missing ones (§6.1).
+_PERCENT_CLASS = frozenset({
+    "ev_revenue_share", "export_share", "customer_concentration",
+    "aftermarket_share", "capacity_utilization",
+    "promoter_holding_pct", "promoter_pledge_pct",
+    "fii_holding_pct", "dii_holding_pct", "dividend_yield_pct",
+})
+_CURRENCY_CLASS = frozenset({"order_book", "market_cap"})
+
+
+def unit_mismatch(name: str, unit: str) -> bool:
+    """True when a canon metric arrives with a unit its definition cannot
+    have — the observation must be dropped, never stored."""
+    if name in _PERCENT_CLASS:
+        return unit != "percent"
+    if name in _CURRENCY_CLASS:
+        return unit not in ("inr_crore", "inr")
+    return False
+
+
 def _norm(s: str) -> str:
     """Lowercase; '-' and '_' both become spaces; collapse whitespace. Applied
     to BOTH keys and inputs so 'debtor_days', 'Debtor Days' and 'debtor-days'

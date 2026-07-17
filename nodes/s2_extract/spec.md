@@ -1,4 +1,4 @@
-# s2_extract — document extraction (LLM + url_context)
+# s2_extract — document extraction (local fetch + inline LLM; url_context fallback)
 
 ## Purpose
 Turn fetched documents into (a) verbatim evidence passages, (b) structured
@@ -7,9 +7,23 @@ group. THE only node that creates evidence — everything downstream cites
 what this node captures. Extraction is NOT analysis: no opinions, no
 synthesis, no arithmetic.
 
+## Fetch path (Phase 3 — Extraction 2.0)
+Per-URL fallback chain: **local fetch** (`src/ingestion/fetcher.py`:
+requests + pypdf/trafilatura, text inlined into the prompt on the active
+synthesis model, exploiting M3's 1M context) → **Gemini url_context** →
+skip + log. All concall transcripts are merged into ONE batched call with
+`=== SOURCE: <url> ===` delimiters; that call additionally emits
+cross-quarter `guidance_evolution[]` and `recurring_themes[]` (top-level,
+sibling of `sources`), persisted as knowledge entry
+`concall_cross_quarter` and fed to section F. Investor-presentation
+fetches are validated (multi-page PDF or presentation vocabulary) before
+any extraction call is spent; failures log outcome `mistarget`, which the
+learned domain table counts as a failure.
+
 ## Inputs
-- URL(s) via url_context (per s1 plan) + `doc_class` + company profile
-  (name/aliases/ticker, fiscal quarter map) + seeded entity name list
+- URL(s) per s1 plan (fetched text inline, or via url_context on
+  fallback) + `doc_class` + company profile (name/aliases/ticker, fiscal
+  quarter map) + seeded entity name list
 
 ## Instructions (prompt body)
 
@@ -45,8 +59,8 @@ guessing.
 | doc_class | Extract with priority |
 |---|---|
 | `concall` | ALL guidance statements (with speaker); volume/demand commentary; margin walk explanations; capex/order-book updates; every analyst question that management dodged or answered defensively (verbatim Q + A); one-off explanations |
-| `annual_report` | Accounting-policy notes (revenue recognition, depreciation, capitalization); RM/cost-of-materials breakdown; segment revenue/results/capital-employed; top-customer disclosures; RPT note (amounts + counterparties); contingent liabilities; CWIP; borrowings schedule; auditor report language incl. CARO; MD&A demand/strategy passages; risk factors (specific ones, skip boilerplate); remuneration; pledge |
-| `investor_presentation` | Segment/revenue mix charts (as numbers); order book/new wins; capacity + utilization; capex plans with amounts/timelines; market-share claims; strategy targets |
+| `annual_report` | Accounting-policy notes (revenue recognition, depreciation, capitalization); RM/cost-of-materials breakdown BY MATERIAL with amounts (each line a metric_candidate); segment tables — revenue/results/capital-employed, EVERY cell a metric_candidate; geography/export split (each region a metric_candidate); top-customer % under Ind-AS 108 (metric_candidate); forex earnings and spend; RPT note (amounts + counterparties); contingent liabilities; CWIP; borrowings schedule; auditor report language incl. CARO; MD&A demand/strategy passages; risk factors (specific ones, skip boilerplate); remuneration; pledge |
+| `investor_presentation` | Segment/revenue mix as numbers (each slice a metric_candidate); order book/new wins (metric_candidates); EV/BEV revenue share; capacity + utilization per plant (metric_candidates); capex plans with amounts/timelines; export/geography mix; market-share claims; strategy targets with dates |
 | `results_pdf` | Every statement line item as printed (P&L, BS if included, CF if included), quarter + YoY comparatives; exceptional items + notes; segment tables; auditor limited-review remarks |
 | `rating_rationale` | Rating + outlook + change; EVERY strength/weakness listed; leverage/coverage numbers cited; liquidity assessment; customer/supplier concentration statements; guidance/expectation statements by the agency |
 | `screener_page` | The full ratio/statement tables (each cell → metric_candidate); shareholding summary; price/market cap/multiples as displayed |

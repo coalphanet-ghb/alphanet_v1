@@ -13,7 +13,7 @@ from datetime import date
 from src import db
 
 # canonical metric names live in the shared vocabulary module
-from src.ingestion.metric_names import canon_name  # noqa: E402
+from src.ingestion.metric_names import canon_name, unit_mismatch  # noqa: E402
 
 
 # --- value & period parsing --------------------------------------------------
@@ -206,6 +206,7 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
         return None
 
     skipped = 0
+    unit_dropped = []
     for c in state.get("metric_candidates", []):
         if c.get("ambiguous"):
             continue
@@ -222,6 +223,11 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
             continue
         if not parsed_v or not parsed_p:
             skipped += 1
+            continue
+        # Phase 3 unit guard: a canon KPI with an impossible unit is a
+        # mislabelled quantity, not a fact — drop it loudly (§6.1).
+        if unit_mismatch(name, parsed_v[1]):
+            unit_dropped.append(f"{name}={c.get('value_printed')}")
             continue
         url = c.get("url", "")
         if c.get("doc_class") == "macro_page":
@@ -266,6 +272,9 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
                       f"source — treat those figures with caution")
     if skipped:
         print(f"  [s3] {skipped} candidate(s) skipped (unparseable value/period/entity)")
+    if unit_dropped:
+        print(f"  [s3] {len(unit_dropped)} candidate(s) dropped by unit guard "
+              f"(canon KPI with impossible unit): {', '.join(unit_dropped[:6])}")
     if not out:
         insuff.append("metric extraction yielded no valid observations — "
                       "numeric sections will be thin (check screener readability)")

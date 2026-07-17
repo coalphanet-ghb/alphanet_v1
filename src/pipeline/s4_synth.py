@@ -170,6 +170,10 @@ def f_node(state):
         "GUIDANCE SCORECARD (calc — the join of past guidance vs actuals)":
             _computed(state, keys=("guidance_scorecard",)),
         "OPEN GUIDANCE ITEMS": _pool(state, "guidance_items"),
+        "GUIDANCE EVOLUTION (cross-quarter trails from batched concall read)":
+            _pool(state, "guidance_evolution", 20),
+        "RECURRING CONCALL THEMES (incl. repeatedly dodged topics)":
+            _pool(state, "recurring_themes", 15),
         "CONCALL EVIDENCE (4 quarters, incl. dodged questions)":
             _evidence(state, ["concall"], 14000),
         "GOVERNANCE EVIDENCE (AR / shareholding / rating / news)":

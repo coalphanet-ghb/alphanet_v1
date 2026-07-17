@@ -33,6 +33,8 @@ class ReportState(TypedDict):
     supply_edges: NotRequired[List[dict]]
     peer_mentions: NotRequired[List[str]]
     events: NotRequired[List[dict]]
+    guidance_evolution: NotRequired[List[dict]]  # cross-quarter concall trails (Phase 3.3)
+    recurring_themes: NotRequired[List[dict]]    # cross-quarter concall themes/dodges
     read_log: NotRequired[List[dict]]           # per-URL outcome (reused/read/failed)
     screener_doc_links: NotRequired[dict]       # url -> {concall_transcripts, annual_reports}
 

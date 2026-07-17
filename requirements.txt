@@ -5,3 +5,5 @@ supabase>=2.4.0
 ddgs>=9.0.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
+pypdf>=4.0.0
+trafilatura>=1.8.0

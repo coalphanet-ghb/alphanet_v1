@@ -100,9 +100,11 @@ COMPANIES = [
     },
 ]
 
-# --- Read budget (playbook §0) ------------------------------------------
-# Every URL read = 1 url_context call. P1 never cut; P3 cut first.
-MAX_READ_CALLS = int(os.environ.get("MAX_READ_CALLS", "26"))
+# --- Read budget (playbook §0; Phase 3.4 raised on paid tier) -----------
+# Every read = 1 extraction call (local-fetch inline or url_context).
+# P1 never cut; P3 cut first.
+MAX_READ_CALLS = int(os.environ.get("MAX_READ_CALLS", "40"))
+MAX_NEWS_URLS = int(os.environ.get("MAX_NEWS_URLS", "10"))   # was 6
 MAX_RESULTS_DOC_HUNT = 5         # ddgs results for document-hunt queries
 MAX_RESULTS_DATA = 3             # ddgs results for data/news queries
 MAX_URLS_MACRO = 4               # macro theme reads (batched)

@@ -12,7 +12,7 @@ import requests
 
 from src.config import (
     TIER1_DOMAINS, BLOCKED_DOMAINS, BLOCKED_URL_PATTERNS, LEGAL_DOMAINS,
-    DOMAIN_SCORES_PATH, MAX_READ_CALLS, MAX_URLS_MACRO,
+    DOMAIN_SCORES_PATH, MAX_READ_CALLS, MAX_NEWS_URLS, MAX_URLS_MACRO,
     MAX_URLS_SECTOR, PREFLIGHT_TIMEOUT, MAX_RESULTS_DATA,
 )
 from src.pipeline.query_banks import (
@@ -22,8 +22,9 @@ from src.pipeline.query_banks import (
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (research-preflight)"}
 
-# outcomes that mean "this domain wasted an LLM call"
-_BAD_OUTCOMES = {"unreadable", "parse_failed", "deadline"}
+# outcomes that mean "this domain wasted an LLM call" (mistarget = a
+# doc-hunt hit that wasn't the document type it claimed — Phase 3.6)
+_BAD_OUTCOMES = {"unreadable", "parse_failed", "deadline", "mistarget"}
 _DEMOTE_AFTER = 2
 
 
@@ -191,6 +192,12 @@ def discover_node(state) -> dict:
                           "title": f"Annual report ({ars[0]['label']})"})
             seen.add(ars[0]["url"])
             ar_covered = True
+        # Phase 3.4 (paid budget): FY-1 annual report for forensic trends
+        if len(ars) > 1:
+            reads.append({"target": "annual_report_fy1", "doc_class": "annual_report",
+                          "priority": 2, "urls": [ars[1]["url"]], "batch": False,
+                          "title": f"Annual report ({ars[1]['label']})"})
+            seen.add(ars[1]["url"])
     except Exception as e:
         print(f"  [s1] screener doc links unavailable ({e}) — using ddgs for "
               f"transcripts/AR")
@@ -220,18 +227,44 @@ def discover_node(state) -> dict:
         if doc_class == "annual_report" and ar_covered:
             continue
         found = _search([(tmpl.format(**slots), doc_class, n)], seen, timelimit="y")
-        if found:
-            take = 1 if doc_class != "shareholding" else 1
-            reads.append({"target": doc_class, "doc_class": doc_class,
-                          "priority": prio, "urls": [f["url"] for f in found[:take]],
-                          "batch": False, "title": found[0]["title"]})
+        if not found:
+            continue
+        # Phase 3.6: presentation hunts often surface aggregator list pages
+        # — prefer direct PDFs / exchange-hosted files within tier order
+        if doc_class == "investor_presentation":
+            found.sort(key=lambda f: (
+                0 if (f["url"].lower().split("?")[0].endswith(".pdf")
+                      or "bseindia" in f["url"]) else 1,
+                f["tier"]))
+        # Phase 3.4: a second rating agency's rationale (distinct domain)
+        # gives an independent forward view — one solo read per rationale
+        if doc_class == "rating_rationale":
+            picked, domains = [], set()
+            for f in found:
+                d = _domain(f["url"])
+                if d in domains:
+                    continue
+                domains.add(d)
+                picked.append(f)
+                if len(picked) == 2:
+                    break
+            for i, f in enumerate(picked):
+                reads.append({"target": doc_class if i == 0 else f"{doc_class}_2",
+                              "doc_class": doc_class, "priority": prio,
+                              "urls": [f["url"]], "batch": False,
+                              "title": f["title"]})
+            continue
+        reads.append({"target": doc_class, "doc_class": doc_class,
+                      "priority": prio, "urls": [found[0]["url"]],
+                      "batch": False, "title": found[0]["title"]})
 
     # --- company news (batched 3/call). Past-month only: stale hits were
     # polluting the pool (a 2023 trademark judgment became a "moat").
-    news_urls = _search([(t.format(**slots), dc, n)
+    # Phase 3.4: budget raised 6 -> MAX_NEWS_URLS (10).
+    news_urls = _search([(t.format(**slots), dc, 5)
                          for t, dc, p, n in COMPANY_NEWS_QUERIES[:2]],
                         seen, timelimit="m")
-    for i in range(0, min(len(news_urls), 6), 3):
+    for i in range(0, min(len(news_urls), MAX_NEWS_URLS), 3):
         reads.append({"target": f"news_{i//3}", "doc_class": "news_batch", "priority": 2,
                       "urls": [u["url"] for u in news_urls[i:i+3]], "batch": True})
 

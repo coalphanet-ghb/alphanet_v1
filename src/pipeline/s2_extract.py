@@ -1,5 +1,12 @@
 """
-S2 — document extraction (LLM + url_context). Spec: nodes/s2_extract.
+S2 — document extraction. Spec: nodes/s2_extract.
+
+Phase 3 (Extraction 2.0): documents are fetched LOCALLY (requests + pypdf/
+trafilatura) and their text goes INLINE into one extraction call on the
+active synthesis model (M3's 1M context). Gemini url_context remains the
+per-URL fallback when local fetch fails; a URL failing both is skipped and
+logged. All concall transcripts are batched into ONE call, which also
+emits cross-quarter fields (guidance_evolution, recurring_themes).
 
 Executes the url_plan: verbatim passages -> evidence rows; numbers ->
 metric candidates; cross-block tags -> pools. Reuses already-ingested
@@ -11,8 +18,12 @@ import json
 
 from src import db
 from src.config import REUSE_MIN_PASSAGES
-from src.llm import read_urls, parse_json_lenient, LLMError, CallDeadlineError
-from src.pipeline.query_banks import MACRO_METRIC_ENTITY_MAP
+from src.ingestion.fetcher import (
+    fetch_document, looks_like_presentation, FetchError,
+)
+from src.llm import (
+    read_urls, synthesize, parse_json_lenient, LLMError, CallDeadlineError,
+)
 
 _DOC_TYPE_MAP = {   # doc_class -> source_documents.type
     "concall": "concall_transcript", "annual_report": "annual_report",
@@ -25,8 +36,8 @@ _DOC_TYPE_MAP = {   # doc_class -> source_documents.type
 
 _FOCUS = {
     "concall": "ALL forward-looking guidance statements (with speaker); volume/demand commentary; margin walk explanations; capex/order-book updates; every analyst question management dodged or answered defensively (verbatim Q and A); explanations of one-offs.",
-    "annual_report": "Accounting-policy notes (revenue recognition, depreciation, capitalization); raw-material/cost-of-materials breakdown; segment revenue/results/capital employed; top-customer disclosures; related-party transactions (amounts, counterparties); contingent liabilities; CWIP; borrowings schedule; auditor report language incl. CARO; MD&A demand/strategy passages; SPECIFIC risk factors (skip boilerplate); remuneration; pledge.",
-    "investor_presentation": "Segment/revenue mix as numbers; order book / new wins; capacity and utilization; capex plans with amounts and timelines; market-share claims; strategy targets.",
+    "annual_report": "Accounting-policy notes (revenue recognition, depreciation, capitalization); raw-material/cost-of-materials breakdown BY MATERIAL with amounts (each line a metric_candidate); segment tables — revenue, results, capital employed per segment, EVERY cell a metric_candidate; geography/export revenue split (each region a metric_candidate); top-customer disclosures under Ind-AS 108 (customer concentration % -> metric_candidate); forex earnings and spend; related-party transactions (amounts, counterparties); contingent liabilities; CWIP; borrowings schedule; auditor report language incl. CARO; MD&A demand/strategy passages; SPECIFIC risk factors (skip boilerplate); remuneration; pledge.",
+    "investor_presentation": "Segment/revenue mix as numbers (each slice a metric_candidate); order book value and new wins (metric_candidates); EV/BEV revenue share; capacity and utilization per plant (metric_candidates); capex plans with amounts and timelines; export/geography mix; market-share claims; strategy targets with dates.",
     "results_pdf": "Every financial-statement line item as printed with quarter and YoY comparatives; exceptional items and their notes; segment tables; auditor limited-review remarks.",
     "rating_rationale": "Rating, outlook, and any change; EVERY listed strength and weakness; leverage/coverage/liquidity numbers cited; customer/supplier concentration statements; the agency's forward expectations.",
     "screener_page": "The complete ratio and statement tables — EVERY row-year cell becomes a metric candidate (P&L, balance sheet, cash flow, ratios, shareholding, price/valuation numbers as displayed). Passages only for the 'about' text.",
@@ -52,20 +63,64 @@ Rules: quote VERBATIM, never paraphrase or summarize. No arithmetic, no
 unit conversion — values exactly as printed. Ambiguous unit/period ->
 "ambiguous": true, never guess. Cap ~15 passages per source (screener
 pages: passages minimal, metric_candidates exhaustive). If a URL cannot
-be read, {"url": ..., "readable": false} and move on."""
+be read, {"url": ..., "readable": false} and move on.
+Canonical indicator names — use one of these EXACT snake_case names ONLY
+when the document states that PRECISE quantity (definition in brackets):
+order_book [total order book VALUE in currency, never a % split of it],
+ev_revenue_share [EV/BEV products' % of REVENUE],
+export_share [exports as % of total revenue, stated as such — a single
+  region's share (e.g. North America) is NOT export_share],
+customer_concentration [the SINGLE largest customer's % of revenue —
+  top-5/top-10 shares and revenue AMOUNTS from >10% customers are NOT this],
+aftermarket_share [aftermarket/replacement channel % of revenue],
+capacity_utilization [plant utilization %].
+If the quantity differs from the bracketed definition in ANY way, use a
+plain descriptive snake_case name instead (e.g. top_5_customer_share,
+north_america_revenue_share, ev_share_of_order_book)."""
+
+# Phase 3.3 — emitted ONLY when multiple concall transcripts share one call
+_CROSS_QUARTER_SCHEMA = """
+This call carries MULTIPLE concall transcripts (each opened by a
+'=== SOURCE: <url> ===' line, with its quarter label). ALSO emit these
+TOP-LEVEL keys (siblings of "sources"), built ACROSS the calls:
+"guidance_evolution": [{"metric": "<what was guided>",
+   "trail": [{"call": "<quarter label>", "guidance": "<verbatim>"}],
+   "direction": "raised|maintained|lowered|dropped", "note": "<one line>"}],
+"recurring_themes": [{"theme": "", "calls": ["<quarter labels>"],
+   "pattern": "consistent|evolving|dodged_repeatedly",
+   "quote": "<one representative verbatim quote>"}]
+"dropped" = guidance silently stopped being mentioned in later calls.
+Same rules: verbatim quotes, no arithmetic, no inference beyond the text."""
+
+# Output budgets: extraction lists are long; reasoning models also spend
+# hidden thinking tokens inside max_tokens (HANDOFF2 §6.12).
+_EXTRACT_MAX_TOKENS = 32768
+_BATCH_EXTRACT_MAX_TOKENS = 49152
 
 
-def _instruction(doc_class: str) -> str:
-    return ("You are an ingestion instrument for an equity research platform. "
-            f"From the document(s) below, extract with this focus: {_FOCUS[doc_class]}\n\n"
-            + _SCHEMA)
+def _instruction(doc_class: str, inline: bool = False, n_sources: int = 1,
+                 cross_quarter: bool = False) -> str:
+    head = "You are an ingestion instrument for an equity research platform. "
+    if inline:
+        head += (f"Below are {n_sources} fetched document(s), each opened by a "
+                 "line '=== SOURCE: <url> ==='. Emit one entry in \"sources\" "
+                 "per URL, in the order given, echoing each url exactly. ")
+    head += (f"Extract with this focus: {_FOCUS[doc_class]}\n\n" + _SCHEMA)
+    if cross_quarter:
+        head += "\n" + _CROSS_QUARTER_SCHEMA
+    return head
 
 
-def _persist_source(read: dict, url: str, extracted_len: int, raw: dict,
+def _url_title(read: dict, url: str) -> str:
+    return (read.get("titles_by_url", {}).get(url)
+            or read.get("title") or read["target"])
+
+
+def _persist_source(read: dict, url: str, raw: dict,
                     layer: str, ticker: str) -> tuple:
     doc_id, created = db.save_source_document(
         doc_type=_DOC_TYPE_MAP[read["doc_class"]],
-        title=read.get("title") or read["target"],
+        title=_url_title(read, url),
         url_or_path=url,
         text_for_hash=json.dumps(raw, sort_keys=True)[:100000],
         metadata={"doc_class": read["doc_class"], "layer": layer,
@@ -84,6 +139,32 @@ def _layer_of(doc_class: str) -> str:
     if doc_class == "sector_page":
         return "industry"
     return "company"
+
+
+def _batch_concall_reads(url_plan: list) -> list:
+    """Phase 3.3: merge every concall read into ONE read so all transcripts
+    share a single extraction call (enables cross-quarter fields). Keeps
+    per-URL titles so evidence provenance stays quarter-specific."""
+    concalls = [r for r in url_plan if r["doc_class"] == "concall"]
+    if len(concalls) <= 1:
+        return url_plan
+    merged = {
+        "target": "concalls_batch", "doc_class": "concall", "priority": 1,
+        "batch": True,
+        "urls": [u for r in concalls for u in r["urls"]],
+        "titles_by_url": {u: r.get("title") or r["target"]
+                          for r in concalls for u in r["urls"]},
+        "title": "Concall transcripts (batched)",
+    }
+    out, inserted = [], False
+    for r in url_plan:
+        if r["doc_class"] == "concall":
+            if not inserted:
+                out.append(merged)
+                inserted = True
+            continue
+        out.append(r)
+    return out
 
 
 def _screener_via_parser(read, pools, state, entities) -> bool:
@@ -138,6 +219,102 @@ def _screener_via_parser(read, pools, state, entities) -> bool:
     return True
 
 
+def _extract_call(get_text, label: str) -> dict | None:
+    """One extraction call + lenient parse, with the documented
+    reprompt-once exception on malformed JSON (Phase 2.7). get_text is
+    called with the extra reprompt suffix ('' first time). Returns the
+    parsed dict or None (skip)."""
+    try:
+        text = get_text("")
+    except CallDeadlineError:
+        print(f"  [s2][warn] deadline expired — skipping {label}")
+        return None
+    parsed = parse_json_lenient(text)
+    if parsed and "sources" in parsed:
+        return parsed
+    print(f"  [s2][warn] unparseable extraction for {label} — reprompting once")
+    try:
+        text = get_text("\n\nYour previous response was NOT valid JSON. "
+                        "Return ONLY the JSON object described above — "
+                        "no prose, no markdown fences.")
+    except CallDeadlineError:
+        return None
+    parsed = parse_json_lenient(text)
+    if parsed and "sources" in parsed:
+        return parsed
+    print(f"  [s2][warn] still unparseable — skipping {label}")
+    return None
+
+
+def _ingest_sources(parsed: dict, read: dict, ordered_urls: list, pools: dict,
+                    state, entities: list, layer: str) -> None:
+    """Persist one parsed extraction envelope: evidence rows, metric
+    candidates, tag pools, per-document knowledge entry."""
+    persist = state["persist"]
+    profile = state["profile"]
+    company_id = profile.get("entity_id")
+
+    for idx, src in enumerate(parsed["sources"]):
+        url = src.get("url") or (ordered_urls[idx] if idx < len(ordered_urls)
+                                 else read["urls"][0])
+        if not src.get("readable", True):
+            print(f"  [s2][warn] unreadable: {url}")
+            pools["read_log"].append({"url": url, "outcome": "unreadable"})
+            continue
+
+        passages = src.get("passages") or []
+        candidates = src.get("metric_candidates") or []
+        doc_id = None
+        risk_ev_ids = []
+        if persist:
+            doc_id, _ = _persist_source(read, url, src, layer,
+                                        profile["ticker"])
+        for p in passages:
+            ptext = (p.get("text") or "").strip()
+            if len(ptext) < 30:
+                continue
+            ev_id = None
+            if persist:
+                ev_id = db.save_evidence(doc_id, ptext, p.get("page_or_timestamp"))
+                named = [e["id"] for e in entities
+                         if e["name"].lower() in ptext.lower()]
+                db.link_evidence_entities(ev_id, named)
+            entry = {"id": ev_id or f"mem_{len(pools['evidence_pool'])}",
+                     "text": ptext, "url": url, "doc_class": read["doc_class"],
+                     "title": _url_title(read, url),
+                     "tags": p.get("tags") or [], "page": p.get("page_or_timestamp")}
+            pools["evidence_pool"].append(entry)
+            if "risk_signal" in entry["tags"]:
+                pools["risk_signals"].append({"evidence_id": entry["id"],
+                                              "text": ptext[:300], "url": url})
+                risk_ev_ids.append(entry["id"])
+
+        for c in candidates:
+            c["source_document_id"] = doc_id
+            c["doc_class"] = read["doc_class"]
+            c["url"] = url
+        pools["metric_candidates"] += candidates
+        pools["guidance_items"] += src.get("guidance_items") or []
+        pools["supply_edges"] += src.get("supply_chain_edges") or []
+        pools["peer_mentions"] += src.get("peer_mentions") or []
+        pools["events"] += src.get("events") or []
+        pools["read_log"].append({"url": url, "outcome": "read",
+                                  "passages": len(passages),
+                                  "metrics": len(candidates)})
+
+        if persist and doc_id:
+            db.save_knowledge_entry(
+                layer if layer != "company" else "company",
+                company_id, _pool_entry_section(doc_id),
+                {"metric_candidates": candidates,
+                 "guidance_items": src.get("guidance_items") or [],
+                 "supply_chain_edges": src.get("supply_chain_edges") or [],
+                 "peer_mentions": src.get("peer_mentions") or [],
+                 "events": src.get("events") or [],
+                 "risk_evidence_ids": risk_ev_ids},
+                generated_by_run_id=state.get("run_id") or None)
+
+
 def extract_node(state) -> dict:
     if state.get("dry_run"):
         from src.pipeline.dry_run import synthetic_extraction
@@ -151,10 +328,13 @@ def extract_node(state) -> dict:
 
     pools = {"evidence_pool": [], "metric_candidates": [], "guidance_items": [],
              "risk_signals": [], "supply_edges": [], "peer_mentions": [],
-             "events": [], "read_log": []}
+             "events": [], "read_log": [],
+             "guidance_evolution": [], "recurring_themes": []}
     seen_doc_ids: set = set()   # a doc reachable via >1 URL loads once (Phase 0.4)
 
-    for read in state["url_plan"]:
+    url_plan = _batch_concall_reads(state["url_plan"])
+
+    for read in url_plan:
         layer = _layer_of(read["doc_class"])
 
         # --- Phase 1: screener pages parse deterministically, fresh each run
@@ -164,11 +344,9 @@ def extract_node(state) -> dict:
 
         # --- reuse shortcut: URL already ingested -> reload evidence + pools
         if persist and not state.get("reingest"):
-            reused = True
             for url in list(read["urls"]):
                 doc_id = db.get_source_document_by_url(url)
                 if not doc_id:
-                    reused = False
                     continue
                 if doc_id in seen_doc_ids:
                     read["urls"].remove(url)
@@ -192,7 +370,7 @@ def extract_node(state) -> dict:
                         pools["evidence_pool"].append({
                             "id": r["id"], "text": r["text"], "url": url,
                             "doc_class": read["doc_class"],
-                            "title": read.get("title") or read["target"],
+                            "title": _url_title(read, url),
                             "tags": [], "page": r.get("page_or_timestamp")})
                     if pool_entry:
                         c = pool_entry["content_json"]
@@ -208,100 +386,108 @@ def extract_node(state) -> dict:
             if not read["urls"]:
                 continue
 
-        # --- fresh read
-        print(f"[s2_extract] read {read['target']} ({len(read['urls'])} url) ...")
-        try:
-            text = read_urls(read["urls"], _instruction(read["doc_class"]))
-        except CallDeadlineError:
-            print(f"  [s2][warn] deadline expired — skipping {read['target']}")
-            pools["read_log"].append({"target": read["target"], "outcome": "deadline"})
-            continue
-        except LLMError:
-            raise      # model-level failure: abort run (no-retry policy)
-
-        parsed = parse_json_lenient(text)
-        if not parsed or "sources" not in parsed:
-            # Phase 2.7: ONE reprompt on malformed JSON (documented exception
-            # to the no-retry policy — extraction is expensive to re-fetch and
-            # the failure is a formatting slip, not a model/quota failure).
-            print(f"  [s2][warn] unparseable extraction for {read['target']} — "
-                  f"reprompting once")
+        # --- Phase 3.1/3.2 fresh read: local fetch -> inline extraction on
+        # the active synthesis model; per-URL fallback to Gemini url_context
+        inline_urls, inline_docs, fallback_urls = [], {}, []
+        for url in read["urls"]:
             try:
-                text = read_urls(read["urls"], _instruction(read["doc_class"]) +
-                                 "\n\nYour previous response was NOT valid JSON. "
-                                 "Return ONLY the JSON object described above — "
-                                 "no prose, no markdown fences.")
-                parsed = parse_json_lenient(text)
-            except CallDeadlineError:
-                parsed = None
-            if not parsed or "sources" not in parsed:
-                print(f"  [s2][warn] still unparseable — skipping {read['target']}")
-                pools["read_log"].append({"target": read["target"],
-                                          "url": read["urls"][0] if read["urls"] else None,
-                                          "outcome": "parse_failed"})
+                doc = fetch_document(url)
+            except FetchError as e:
+                print(f"  [s2] local fetch failed ({e}) — "
+                      f"url_context fallback: {url}")
+                fallback_urls.append(url)
                 continue
-
-        for src in parsed["sources"]:
-            url = src.get("url") or read["urls"][0]
-            if not src.get("readable", True):
-                print(f"  [s2][warn] unreadable: {url}")
-                pools["read_log"].append({"url": url, "outcome": "unreadable"})
+            # Phase 3.6: don't spend extraction on a mis-targeted "deck"
+            # (news-list pages posing as investor presentations)
+            if read["doc_class"] == "investor_presentation" and \
+                    not looks_like_presentation(doc):
+                print(f"  [s2][warn] not a presentation (mis-target) — "
+                      f"skipping: {url}")
+                pools["read_log"].append({"url": url, "outcome": "mistarget"})
                 continue
+            inline_urls.append(url)
+            inline_docs[url] = doc
 
-            passages = src.get("passages") or []
-            candidates = src.get("metric_candidates") or []
-            doc_id = None
-            risk_ev_ids = []
-            if persist:
-                doc_id, _ = _persist_source(read, url, len(text), src, layer,
-                                            profile["ticker"])
-            for p in passages:
-                ptext = (p.get("text") or "").strip()
-                if len(ptext) < 30:
-                    continue
-                ev_id = None
-                if persist:
-                    ev_id = db.save_evidence(doc_id, ptext, p.get("page_or_timestamp"))
-                    named = [e["id"] for e in entities
-                             if e["name"].lower() in ptext.lower()]
-                    db.link_evidence_entities(ev_id, named)
-                entry = {"id": ev_id or f"mem_{len(pools['evidence_pool'])}",
-                         "text": ptext, "url": url, "doc_class": read["doc_class"],
-                         "title": read.get("title") or read["target"],
-                         "tags": p.get("tags") or [], "page": p.get("page_or_timestamp")}
-                pools["evidence_pool"].append(entry)
-                if "risk_signal" in entry["tags"]:
-                    pools["risk_signals"].append({"evidence_id": entry["id"],
-                                                  "text": ptext[:300], "url": url})
-                    risk_ev_ids.append(entry["id"])
+        if inline_urls:
+            cross_quarter = read["doc_class"] == "concall" and len(inline_urls) > 1
+            n_pages = sum(d.get("pages") or 0 for d in inline_docs.values())
+            print(f"[s2_extract] read {read['target']} "
+                  f"({len(inline_urls)} url, local fetch, "
+                  f"{sum(d['char_count'] for d in inline_docs.values())} chars"
+                  + (f", {n_pages} pdf pages" if n_pages else "") + ") ...")
+            system = _instruction(read["doc_class"], inline=True,
+                                  n_sources=len(inline_urls),
+                                  cross_quarter=cross_quarter)
+            doc_blocks = []
+            for url in inline_urls:
+                label = _url_title(read, url)
+                doc_blocks.append(f"=== SOURCE: {url} ===\n({label})\n"
+                                  f"{inline_docs[url]['text']}")
+            user = "\n\n".join(doc_blocks)
+            max_out = _BATCH_EXTRACT_MAX_TOKENS if cross_quarter \
+                else _EXTRACT_MAX_TOKENS
 
-            for c in candidates:
-                c["source_document_id"] = doc_id
-                c["doc_class"] = read["doc_class"]
-                c["url"] = url
-            pools["metric_candidates"] += candidates
-            pools["guidance_items"] += src.get("guidance_items") or []
-            pools["supply_edges"] += src.get("supply_chain_edges") or []
-            pools["peer_mentions"] += src.get("peer_mentions") or []
-            pools["events"] += src.get("events") or []
-            pools["read_log"].append({"url": url, "outcome": "read",
-                                      "passages": len(passages),
-                                      "metrics": len(candidates)})
+            def _inline_call(extra, _system=system, _user=user, _mo=max_out):
+                return synthesize(
+                    [{"role": "system", "content": _system + extra},
+                     {"role": "user", "content": _user}],
+                    temperature=0.1, max_tokens=_mo)
 
-            if persist and doc_id:
-                db.save_knowledge_entry(
-                    layer if layer != "company" else "company",
-                    company_id, _pool_entry_section(doc_id),
-                    {"metric_candidates": candidates,
-                     "guidance_items": src.get("guidance_items") or [],
-                     "supply_chain_edges": src.get("supply_chain_edges") or [],
-                     "peer_mentions": src.get("peer_mentions") or [],
-                     "events": src.get("events") or [],
-                     "risk_evidence_ids": risk_ev_ids},
-                    generated_by_run_id=state.get("run_id") or None)
+            parsed = _extract_call(_inline_call, read["target"])
+            if parsed:
+                _ingest_sources(parsed, read, inline_urls, pools, state,
+                                entities, layer)
+                if cross_quarter:
+                    pools["guidance_evolution"] += parsed.get("guidance_evolution") or []
+                    pools["recurring_themes"] += parsed.get("recurring_themes") or []
+                    print(f"  [s2] cross-quarter: "
+                          f"{len(parsed.get('guidance_evolution') or [])} guidance "
+                          f"trails, {len(parsed.get('recurring_themes') or [])} "
+                          f"recurring themes")
+            else:
+                for url in inline_urls:
+                    pools["read_log"].append({"url": url, "outcome": "parse_failed"})
+
+        if fallback_urls:
+            print(f"[s2_extract] read {read['target']} "
+                  f"({len(fallback_urls)} url via url_context) ...")
+
+            def _urlctx_call(extra, _read=read, _urls=fallback_urls):
+                return read_urls(_urls, _instruction(_read["doc_class"]) + extra)
+
+            parsed = _extract_call(_urlctx_call, read["target"])
+            if parsed:
+                _ingest_sources(parsed, read, fallback_urls, pools, state,
+                                entities, layer)
+            else:
+                for url in fallback_urls:
+                    pools["read_log"].append({"url": url, "outcome": "parse_failed"})
 
     if persist:
         plan = state["read_plan"]
+
+        # --- Phase 3.3: persist cross-quarter concall synthesis; if every
+        # transcript was reused (no fresh batch call), rehydrate the stored
+        # one — freshness must never mean "run without the data" (§6.5).
+        if pools["guidance_evolution"] or pools["recurring_themes"]:
+            db.save_knowledge_entry(
+                "company", company_id, "concall_cross_quarter",
+                {"guidance_evolution": pools["guidance_evolution"],
+                 "recurring_themes": pools["recurring_themes"]},
+                generated_by_run_id=state.get("run_id") or None)
+        else:
+            try:
+                stored = db.get_latest("company", company_id,
+                                       "concall_cross_quarter")
+                if stored:
+                    c = stored["content_json"]
+                    pools["guidance_evolution"] = c.get("guidance_evolution", [])
+                    pools["recurring_themes"] = c.get("recurring_themes", [])
+                    if pools["guidance_evolution"] or pools["recurring_themes"]:
+                        print(f"  [s2] rehydrated cross-quarter concall entry "
+                              f"({len(pools['guidance_evolution'])} trails)")
+            except Exception as e:
+                print(f"  [s2][warn] cross-quarter rehydrate failed: {e}")
 
         # --- Phase 0.3: rehydrate SKIPPED-because-fresh layers from storage.
         # s1 emitted no URLs for a fresh layer, so without this the macro /
@@ -342,5 +528,6 @@ def extract_node(state) -> dict:
     print(f"[s2_extract] done: {len(pools['evidence_pool'])} passages, "
           f"{len(pools['metric_candidates'])} metric candidates, "
           f"{len(pools['guidance_items'])} guidance items, "
-          f"{len(pools['risk_signals'])} risk signals")
+          f"{len(pools['risk_signals'])} risk signals, "
+          f"{len(pools['guidance_evolution'])} guidance trails")
     return pools

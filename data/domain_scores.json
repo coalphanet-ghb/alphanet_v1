@@ -1,11 +1,15 @@
 {
+  "angelone.in": {
+    "bad": 0,
+    "ok": 1
+  },
   "auto.economictimes.indiatimes.com": {
     "bad": 0,
     "ok": 1
   },
   "bseindia.com": {
     "bad": 0,
-    "ok": 10
+    "ok": 22
   },
   "cablecommunity.com": {
     "bad": 0,
@@ -15,17 +19,37 @@
     "bad": 0,
     "ok": 1
   },
-  "financialexpress.com": {
+  "economictimes.indiatimes.com": {
+    "bad": 0,
+    "ok": 3
+  },
+  "electronicsera.in": {
     "bad": 0,
     "ok": 1
+  },
+  "entrepreneurnewsnetwork.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "financialexpress.com": {
+    "bad": 0,
+    "ok": 2
   },
   "indiankanoon.org": {
     "bad": 0,
     "ok": 1
   },
+  "ipfonline.com": {
+    "bad": 1,
+    "ok": 0
+  },
   "moneycontrol.com": {
     "bad": 1,
     "ok": 0
+  },
+  "newprojectstracker.com": {
+    "bad": 0,
+    "ok": 1
   },
   "renewablemirror.com": {
     "bad": 0,
@@ -33,26 +57,46 @@
   },
   "sahi.com": {
     "bad": 0,
-    "ok": 1
+    "ok": 3
   },
   "scanx.trade": {
     "bad": 0,
-    "ok": 1
+    "ok": 2
   },
   "screener.in": {
     "bad": 0,
-    "ok": 11
+    "ok": 23
+  },
+  "theglobeandmail.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "tickertape.in": {
+    "bad": 0,
+    "ok": 1
   },
   "tijorifinance.com": {
     "bad": 0,
     "ok": 2
   },
-  "trendlyne.com": {
+  "tipranks.com": {
     "bad": 0,
-    "ok": 5
+    "ok": 1
+  },
+  "trendlyne.com": {
+    "bad": 1,
+    "ok": 7
+  },
+  "valueresearchonline.com": {
+    "bad": 0,
+    "ok": 2
   },
   "whalesbook.com": {
     "bad": 0,
-    "ok": 2
+    "ok": 3
+  },
+  "zaubacorp.com": {
+    "bad": 0,
+    "ok": 1
   }
 }
