@@ -117,7 +117,15 @@ def save_source_document(doc_type: str, title: str, url_or_path: Optional[str],
 
 def save_evidence(source_document_id: str, text: str,
                   page_or_timestamp: Optional[str] = None) -> str:
+    """Idempotent: re-extracting unchanged content returns the existing
+    row's id instead of inserting a duplicate (append-only means facts
+    accumulate, not repeat — --reingest runs were duplicating passages)."""
     client = get_client()
+    existing = (client.table("evidence").select("id")
+                .eq("source_document_id", source_document_id)
+                .eq("text", text).limit(1).execute())
+    if existing.data:
+        return existing.data[0]["id"]
     inserted = client.table("evidence").insert({
         "source_document_id": source_document_id,
         "text": text,

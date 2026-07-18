@@ -1,0 +1,136 @@
+{
+  "fingerprint": {
+    "claim_checks": 19,
+    "quality": {
+      "total": 526,
+      "unresolved": 4,
+      "verified_supported": 188,
+      "verified_total": 200
+    },
+    "sections": {
+      "B": {
+        "blocks": {
+          "flag": 2,
+          "metric_card": 2,
+          "narrative": 5,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 25,
+        "insufficiencies": 8
+      },
+      "C": {
+        "blocks": {
+          "flag": 2,
+          "metric_card": 1,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 18,
+        "insufficiencies": 8
+      },
+      "D": {
+        "blocks": {
+          "narrative": 5,
+          "table": 2
+        },
+        "claims": 14,
+        "insufficiencies": 11
+      },
+      "D1": {
+        "blocks": {
+          "flag": 4,
+          "metric_card": 3,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 2
+        },
+        "claims": 18,
+        "insufficiencies": 10
+      },
+      "D2": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 1,
+          "narrative": 4,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 7
+      },
+      "D3": {
+        "blocks": {
+          "flag": 2,
+          "metric_card": 1,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 18,
+        "insufficiencies": 5
+      },
+      "E": {
+        "blocks": {
+          "flag": 6,
+          "metric_card": 1,
+          "narrative": 4,
+          "table": 1
+        },
+        "claims": 23,
+        "insufficiencies": 10
+      },
+      "F": {
+        "blocks": {
+          "flag": 5,
+          "metric_card": 2,
+          "narrative": 2,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 11
+      },
+      "G": {
+        "blocks": {
+          "flag": 1,
+          "metric_card": 1,
+          "narrative": 3,
+          "table": 1
+        },
+        "claims": 13,
+        "insufficiencies": 7
+      },
+      "H": {
+        "blocks": {
+          "narrative": 3,
+          "ranked_list": 1
+        },
+        "claims": 18,
+        "insufficiencies": 11
+      },
+      "I": {
+        "blocks": {
+          "flag": 1,
+          "metric_card": 2,
+          "narrative": 7,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 10
+      },
+      "J": {
+        "blocks": {
+          "narrative": 1,
+          "ranked_list": 3
+        },
+        "claims": 20,
+        "insufficiencies": 6
+      }
+    }
+  },
+  "frozen_at": "2026-07-18T16:27:25.200692+00:00",
+  "report_version_id": "b6aa96ce-6b38-463d-9689-b04d4fd200b0",
+  "ticker": "M&M",
+  "version": 3
+}

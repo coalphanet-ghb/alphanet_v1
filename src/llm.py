@@ -105,6 +105,31 @@ def get_active_model() -> str:
 # concurrent heavy requests onto the endpoint.
 _gemini_lock = threading.Lock()
 
+# --- Phase 5 cost telemetry: token usage accumulated per process ------------
+# {provider: {"in": n, "out": n}} — read by main.py at finish_run.
+usage_totals: dict = {"gemini": {"in": 0, "out": 0},
+                      "nvidia": {"in": 0, "out": 0},
+                      "fireworks": {"in": 0, "out": 0}}
+_usage_lock = threading.Lock()
+
+
+def _add_usage(provider: str, tokens_in: int, tokens_out: int) -> None:
+    with _usage_lock:
+        usage_totals[provider]["in"] += int(tokens_in or 0)
+        usage_totals[provider]["out"] += int(tokens_out or 0)
+
+
+def run_cost_usd() -> tuple[int, int, float]:
+    """(total_in, total_out, est_cost). Only paid Fireworks tokens are
+    priced; Gemini/NVIDIA run on free tiers (cost 0 until that changes)."""
+    from src.config import FIREWORKS_COST_IN_PER_M, FIREWORKS_COST_OUT_PER_M
+    ti = sum(v["in"] for v in usage_totals.values())
+    to = sum(v["out"] for v in usage_totals.values())
+    fw = usage_totals["fireworks"]
+    cost = (fw["in"] * FIREWORKS_COST_IN_PER_M +
+            fw["out"] * FIREWORKS_COST_OUT_PER_M) / 1_000_000
+    return ti, to, round(cost, 4)
+
 
 def _find_curl() -> str:
     """Prefer Git-for-Windows curl: on this network, both Python's TLS
@@ -206,19 +231,28 @@ def _openai_generate(provider: str, system: str, user: str, temperature: float,
     try:
         data = json.loads(text)
         choice = data["choices"][0]
-        content = choice["message"]["content"] or ""
+        # Reasoning models can exhaust max_tokens INSIDE reasoning_content
+        # and omit "content" entirely — that is a truncation, and must not
+        # crash here as a KeyError ("unexpected shape").
+        content = (choice.get("message") or {}).get("content") or ""
     except (KeyError, IndexError, ValueError) as e:
         raise LLMError(f"Unexpected {provider} response shape: {text[:300]}") from e
+    u = data.get("usage") or {}
+    _add_usage(provider, u.get("prompt_tokens", 0), u.get("completion_tokens", 0))
     # Reasoning models spend hidden thinking tokens INSIDE max_tokens —
     # a truncated envelope must fail loudly as truncation, not as a
     # mysterious JSON parse error downstream.
-    if choice.get("finish_reason") == "length":
+    if choice.get("finish_reason") == "length" or not content:
         usage = data.get("usage", {})
+        reasoning_len = len((choice.get("message") or {})
+                            .get("reasoning_content") or "")
         raise LLMError(
             f"{cfg['model']} output TRUNCATED at max_tokens="
-            f"{payload['max_tokens']} (completion used "
-            f"{usage.get('completion_tokens')} incl. hidden reasoning) — "
-            f"raise the call's max_tokens.")
+            f"{payload['max_tokens']} (finish_reason="
+            f"{choice.get('finish_reason')}, completion used "
+            f"{usage.get('completion_tokens')} tokens incl. hidden "
+            f"reasoning; reasoning_content {reasoning_len} chars, visible "
+            f"content truncated or absent) — raise the call's max_tokens.")
     return content
 
 
@@ -249,9 +283,16 @@ def _generate(contents, config):
         calls_made += 1
 
     try:
-        return client.models.generate_content(
+        response = client.models.generate_content(
             model=_active_model, contents=contents, config=config
         )
+        um = getattr(response, "usage_metadata", None)
+        if um is not None:
+            _add_usage("gemini",
+                       getattr(um, "prompt_token_count", 0) or 0,
+                       (getattr(um, "candidates_token_count", 0) or 0) +
+                       (getattr(um, "thoughts_token_count", 0) or 0))
+        return response
     except Exception as e:
         if _is_deadline(e):
             raise CallDeadlineError(

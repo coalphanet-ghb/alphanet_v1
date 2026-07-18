@@ -95,6 +95,54 @@ _PRESENTATION_KEYWORDS = (
 )
 
 
+def fetch_price_history(ticker: str, company_tokens: list,
+                        range_: str = "1y", interval: str = "1mo"):
+    """Monthly closes from Yahoo's public chart API (no auth). Returns
+    ([(period_label, close)], url, long_name). Identity-validated via the
+    response's longName — a mis-resolved ticker must fail loudly, never
+    return another company's prices (the wisesheets/Macy's lesson)."""
+    import datetime
+    from urllib.parse import quote
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(ticker, safe='')}.NS"
+    r = requests.get(url, params={"range": range_, "interval": interval},
+                     headers=_HEADERS, timeout=30)
+    if r.status_code != 200:
+        raise FetchError(f"yahoo chart HTTP {r.status_code}")
+    try:
+        res = r.json()["chart"]["result"][0]
+        closes = res["indicators"]["quote"][0]["close"]
+        stamps = res["timestamp"]
+    except (KeyError, IndexError, TypeError, ValueError) as e:
+        raise FetchError(f"yahoo chart shape: {e}") from e
+    long_name = (res.get("meta") or {}).get("longName") or ""
+    if company_tokens and not any(t in long_name.lower() for t in company_tokens):
+        raise FetchError(f"identity mismatch: yahoo resolved '{ticker}.NS' "
+                         f"to '{long_name}'")
+    points = []
+    for t, c in zip(stamps, closes):
+        if c:
+            points.append((datetime.date.fromtimestamp(t).strftime("%b %Y"),
+                           round(float(c), 2)))
+    if len(points) < 6:
+        raise FetchError(f"only {len(points)} price points returned")
+    return points, url, long_name
+
+
+def looks_like_valuation_history(doc: dict, company_tokens: list) -> bool:
+    """Validation BEFORE spending extraction on a multiple-history page:
+    (a) the text carries >=4 year->multiple pairs, AND (b) it mentions
+    THIS company. (b) is non-negotiable: wisesheets once resolved the
+    ticker 'M&M.NS' to Macy's Inc — a wrong-company page passes any
+    shape-only check and would ship another company's numbers."""
+    import re as _re
+    text = doc["text"]
+    pairs = _re.findall(r"20\d\d\D{0,15}\d{1,3}\.\d{1,2}", text)
+    if len(pairs) < 4:
+        return False
+    low = text[:20000].lower()
+    return any(t in low for t in company_tokens)
+
+
 def looks_like_presentation(doc: dict) -> bool:
     """Cheap validation BEFORE spending extraction: a real deck is a
     multi-page PDF, or a page whose text carries presentation vocabulary."""

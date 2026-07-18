@@ -15,10 +15,20 @@ already assuming?"*
 
 ## Instructions
 1. **Where it trades** (metric_card + narrative): primary multiple (pack)
-   + 1–2 secondary. The canonical sentence pattern: "trades at 32× TTM
-   earnings — 88th percentile of its own 5-year range [calc], and #2 of
-   5 in its peer set [calc:peer_table]". Same-period, same-basis, from
-   calc only.
+   + 1–2 secondary, INCLUDING P/B (calc:pb) with the book value behind
+   it. The canonical sentence pattern: "trades at 32× TTM earnings —
+   88th percentile of its own 5-year range [calc], and #2 of 5 in its
+   peer set [calc:peer_table]". Same-period, same-basis, from calc only.
+1b. **The year in the multiple** (narrative + table from calc:pe_1y_path
+   when present): the 12-month PE trajectory — start/end/high/low, PE
+   change vs price change (did earnings keep up with the price?). Then
+   ATTRIBUTE the major moves to the year's evidenced events: guidance
+   revisions (GUIDANCE EVOLUTION), risk events (SECTION H), sensitivity
+   shocks (SECTION C) — each attribution cited to its sec:/evidence
+   source and anchored to the month it happened. A move you cannot
+   attribute is stated as unattributed — never invent a story for a
+   price move. This block is the bridge between "what happened this
+   year" (B–H) and "what the market repriced" — write it that way.
 2. **Cyclical adjustment** (narrative, when pack flags cyclical): the
    peak/trough trap stated plainly — current multiple against NORMALIZED
    earnings context (calc: mid-cycle margin × current revenue), plus C's

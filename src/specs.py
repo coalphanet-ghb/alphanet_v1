@@ -38,6 +38,11 @@ CITATION FORMS (use exactly these; anything else fails resolution):
   - "sec:<LETTER>.<block_id>"  a finding established by an upstream section
     (upstream blocks are shown to you already labelled, e.g.
     [sec:D.d1_margin_analysis] — cite that label verbatim)
+  - "edge:<id>"              an entity-graph edge shown in context (edges
+    are labelled [edge:...] — cite the id inside the brackets, never
+    invent one)
+  - "trail:<id>"             a guidance-evolution trail shown in context
+    (labelled [trail:...] — same rule)
 Never invent shorthand (e.g. "[E-Summary]", "evidence 3d11") and never cite
 an evidence uuid you were not given.
 
@@ -56,6 +61,13 @@ NON-NEGOTIABLE RULES:
    evidence_ids (claims cite evidence uuids ONLY — not calc: or sec: ids;
    a claim whose support is a computed value belongs in a block, not in
    claims[]).
+3a. Claims are ATOMIC and PURELY evidence-backed: one fact per claim,
+   fully contained in its cited passage(s), citing EVERY passage it
+   rests on. Never blend a calc-derived number into a claim — the
+   verifier checks claims against evidence text only, so the calc half
+   can never verify; hybrid sentences belong in blocks. Sections with
+   substantial evidence context should yield 8–20 claims; never invent
+   or stretch ids to reach that.
 3b. A number you take from an upstream section must be cited as
    sec:<LETTER>.<block_id> — never re-attribute it to an evidence uuid you
    did not read it in.
@@ -103,6 +115,7 @@ def load_instructions(node_id: str) -> str:
 # node_id -> overlay slot (specs reference these in their Inputs sections)
 NODE_OVERLAY = {
     "s4_business": "business_model", "s4_financials": "financials",
+    "s4a_pl": "financials", "s4b_bs": "financials", "s4c_cf": "financials",
     "s4_supply_chain": "supply_chain", "s4_management": "governance",
     "s5_peers": "peers", "s5_risks": "risks",
     "s6_industry_macro": "industry", "s7_valuation": "valuation",

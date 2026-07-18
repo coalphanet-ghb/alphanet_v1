@@ -54,22 +54,31 @@ src/
 ```bash
 python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env        # GEMINI_API_KEY (no-billing project), Supabase keys
+cp .env.example .env            # GEMINI, Supabase, FIREWORKS (paid) keys
 python scripts/seed_entities.py
-python main.py --dry-run    # graph sanity, zero network
-python main.py              # live (lite model; 'high' only for reruns)
+python main.py --dry-run --ticker SONACOMS   # graph sanity, zero network
+python main.py --ticker SONACOMS --model M3  # production run (~$1, ~25 min)
+python main.py --ticker SONACOMS --model M3 --reingest  # re-read all docs
+                                # (after extraction-prompt/model upgrades)
+python scripts/diff_golden.py SONACOMS       # regression vs frozen golden
 ```
 
-See [NEXT_STEPS.md](NEXT_STEPS.md) for the current test checklist.
+See [NEXT_STEPS.md](NEXT_STEPS.md) for current state and watch-lines.
 
 ## Ground rules (enforced in code, not vibes)
 
 - **Models interpret, Python computes** — every number carries lineage
-  (evidence UUID or calc:formula + input row ids)
+  (evidence UUID or calc:formula + input row ids); canon KPIs carry a
+  unit-class guard, templated sources carry identity validation
 - **Every block cites or it doesn't ship** — unresolved citations are
-  flagged in the report; claims are verified against their evidence
+  flagged in the report; claims are verified against their evidence;
+  claim evidence-ids are validated against the run's pool
 - **Gaps are reported, never papered over** — "not disclosed / not
   computable yet" is first-class output
-- **No fallback, no auto-retry** — first LLM error aborts cleanly;
-  reruns reuse all ingested URLs at zero cost
-- Keep billing DISABLED on the GCP project (free tier dies otherwise)
+- **No fallback, no auto-retry** — first LLM error aborts cleanly; the
+  documented exceptions are narrow and stochastic-only (HTTP 429,
+  extraction reprompt/truncation-once, envelope spiral/JSON retry-once,
+  verifier per-batch retry). Reruns reuse all ingested URLs at zero cost
+- **Golden set** — SONA + M&M reports frozen in `data/golden/`; rerun +
+  `diff_golden` after every prompt/pack/model change
+- Keep billing DISABLED on the Gemini GCP project (free tier dies)

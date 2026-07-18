@@ -57,6 +57,12 @@ def parse_period(printed: str) -> dict | None:
     if not printed:
         return None
     t = str(printed).strip().lower()
+    # aggregate/range labels ("Mar2026-Mar2022 average", "5y median") must
+    # NEVER parse as a single period — a naive match would file an average
+    # as that year's value (wrong numbers are worse than missing ones)
+    if any(w in t for w in ("average", "avg", "median")) or \
+            len(re.findall(r"20\d{2}", t)) > 1:
+        return None
     m = re.match(r"q([1-4])\s*fy\s*(\d{2,4})", t.replace("-", "").replace(" ", ""))
     if m:
         q, yy = int(m.group(1)), int(m.group(2)) % 100
@@ -78,7 +84,18 @@ def parse_period(printed: str) -> dict | None:
         return {"period_type": "year",
                 "period_start": date(end_year - 1, 4, 1).isoformat(),
                 "period_end": date(end_year, 3, 31).isoformat()}
-    m = re.match(r"([a-z]{3})\w*\s+(\d{4})", t)
+    # bare year ("2022") — valuation-history tables label rows this way;
+    # mapped to the FY ending Mar of that year (percentiles are insensitive
+    # to the CY/FY offset; the series ordering is what matters)
+    m = re.fullmatch(r"(20\d{2})", t)
+    if m:
+        yr = int(m.group(1))
+        return {"period_type": "year",
+                "period_start": date(yr - 1, 4, 1).isoformat(),
+                "period_end": date(yr, 3, 31).isoformat()}
+    # month-year with optional day and flexible spacing: "Mar 2025",
+    # "Mar2022" (valuation-history tables), "Jul 17,2026"
+    m = re.match(r"([a-z]{3})[a-z]*\s*(?:\d{1,2}\s*,?\s*)?(\d{4})", t)
     if m and m.group(1) in _MONTHS:
         mo, yr = _MONTHS[m.group(1)], int(m.group(2))
         if mo == 3:   # "Mar 2025" on screener = FY25 annual column
@@ -245,7 +262,8 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
                     continue
         elif c.get("doc_class") in ("concall", "annual_report", "results_pdf",
                                     "investor_presentation", "rating_rationale",
-                                    "shareholding", "screener_page"):
+                                    "shareholding", "screener_page",
+                                    "valuation_history", "price_history"):
             ent = profile.get("entity_id")
         else:
             # sector_page / news / valuepickr numbers are NOT company
@@ -700,8 +718,74 @@ def compute_node(state) -> dict:
         val["pe_peer_rank"] = {"rank": [n for n, _ in ordered].index(ptable["rows"][0]["name"]) + 1
                                if ptable["rows"][0].get("pe") is not None else None,
                                "of": len(ordered), "peers": ordered}
-    insufficiencies.append("valuation own-history percentile: needs multiple "
-                           "history (not yet ingested) — current multiple and peer rank only")
+    # P/B from parsed price and book value (both already observed)
+    bv = _latest(obs, "book_value")
+    px = _latest(obs, "price")
+    if bv and px and bv["value"]:
+        val["pb"] = {"value": round(px["value"] / bv["value"], 1), "unit": "x",
+                     "period": px["period_end"],
+                     "inputs": [px["id"], bv["id"]]}
+
+    # The year in the multiple: monthly PE path = monthly close / TTM EPS
+    # at that date (both series observed; pure Python, full lineage)
+    monthly_px = sorted((o for o in obs if o["metric_name"] == "price"
+                         and o["period_type"] == "month"),
+                        key=lambda o: o["period_end"])
+    eps_q = sorted((o for o in obs if o["metric_name"] == "eps"
+                    and o["period_type"] == "quarter"),
+                   key=lambda o: o["period_end"])
+    pts, path_inputs = [], []
+    for p in monthly_px:
+        qs = [q for q in eps_q if q["period_end"] <= p["period_end"]][-4:]
+        if len(qs) < 4:
+            continue
+        ttm = sum(q["value"] for q in qs)
+        if ttm <= 0:
+            continue
+        pts.append({"month": p["period_end"][:7], "price": p["value"],
+                    "ttm_eps": round(ttm, 2), "pe": round(p["value"] / ttm, 1)})
+        path_inputs += [p["id"]] + [q["id"] for q in qs]
+    if len(pts) >= 6:
+        pes = [x["pe"] for x in pts]
+        val["pe_1y_path"] = {
+            "points": pts,
+            "pe_start": pts[0]["pe"], "pe_end": pts[-1]["pe"],
+            "pe_high": max(pes), "pe_low": min(pes),
+            "pe_change_pct": round((pts[-1]["pe"] / pts[0]["pe"] - 1) * 100, 1),
+            "price_change_pct": round(
+                (pts[-1]["price"] / pts[0]["price"] - 1) * 100, 1),
+            "note": "TTM EPS = sum of the 4 most recent quarterly EPS at "
+                    "each month-end; basis follows the quarterly prints",
+            "inputs": sorted(set(path_inputs))}
+    else:
+        insufficiencies.append(
+            "1y PE path not computable — needs monthly price history plus "
+            ">=4 quarterly EPS prints per point (price_history source or "
+            "quarterly EPS series missing)")
+
+    # Phase 5.4: own-history P/E percentile from the extracted multiple
+    # series (valuation_history reads) — deterministic, never modelled
+    pe_hist = _series(obs, "pe")
+    if val.get("pe") and len(pe_hist) >= 4:
+        hist_vals = [o["value"] for o in pe_hist if o["value"]]
+        cur = val["pe"]["value"]
+        pct = round(100 * sum(1 for h in hist_vals if h <= cur) / len(hist_vals))
+        val["pe_own_history"] = {
+            "percentile": pct, "n_years": len(hist_vals),
+            "low": round(min(hist_vals), 1), "high": round(max(hist_vals), 1),
+            "median": round(sorted(hist_vals)[len(hist_vals) // 2], 1),
+            "inputs": [o["id"] for o in pe_hist]}
+        val["re_rating_3y"] = {
+            "pe_then": round(pe_hist[-4]["value"], 1), "pe_now": cur,
+            "from": pe_hist[-4]["period_end"],
+            "note": "pair with the computed EPS CAGR to decompose price "
+                    "return into earnings growth vs multiple change",
+            "inputs": [pe_hist[-4]["id"]] + list(val["pe"].get("inputs", []))}
+    else:
+        insufficiencies.append(
+            "valuation own-history percentile: PE history series not "
+            "available (valuation_history read missing/unreadable — needs "
+            ">=4 annual multiple observations)")
 
     # sector KPIs (generic: look for the metric; else insufficiency)
     skpis = {}

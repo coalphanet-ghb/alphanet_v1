@@ -12,6 +12,15 @@ cleanly; rerunning is cheap (ingested URLs are reused with zero LLM calls).
 """
 
 import argparse
+import sys
+
+# Windows consoles default to cp1252; any non-ASCII in printed data (a ₹
+# in a URL slug once crashed s2 mid-run) must degrade, never throw.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except Exception:
+        pass
 
 from src.pipeline.graph import build_graph
 from src.config import (
@@ -137,8 +146,11 @@ def main():
     if persist:
         from src import db
         import src.llm as llm
-        db.finish_run(run_id, "success", model_used=get_active_model())
-        print(f"\nLLM calls this run: {llm.calls_made}")
+        ti, to, cost = llm.run_cost_usd()
+        db.finish_run(run_id, "success", model_used=get_active_model(),
+                      tokens_input=ti, tokens_output=to, cost_usd=cost)
+        print(f"\nLLM calls this run: {llm.calls_made} "
+              f"({ti:,} in / {to:,} out tokens, ~${cost:.2f} paid)")
 
     print(f"\nDone. Report: {result['report_path']}")
 

@@ -41,6 +41,13 @@ class ReportState(TypedDict):
     # s3_compute
     computed: NotRequired[dict]         # {computed_financials, forensic_flags, guidance_scorecard, peer_table, valuation_context, insufficiencies}
 
+    # s4 statement-forensic wave (Phase 4)
+    envelope_D1: NotRequired[dict]      # P&L forensic node (s4a_pl)
+    envelope_D2: NotRequired[dict]      # BS forensic node (s4b_bs)
+    envelope_D3: NotRequired[dict]      # CF forensic node (s4c_cf)
+    claim_checks: NotRequired[List[dict]]   # pooled mgmt-claim-vs-numbers verdicts
+    followups: NotRequired[List[dict]]      # answered followup_requests (s4d)
+
     # s4–s8 section envelopes, keyed by blueprint letter
     envelope_B: NotRequired[dict]
     envelope_C: NotRequired[dict]

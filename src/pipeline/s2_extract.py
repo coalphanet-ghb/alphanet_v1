@@ -31,7 +31,7 @@ _DOC_TYPE_MAP = {   # doc_class -> source_documents.type
     "rating_rationale": "brokerage_report", "screener_page": "other",
     "shareholding": "regulatory_filing", "news_batch": "news",
     "valuepickr": "other", "sector_page": "industry_report",
-    "macro_page": "macro_data",
+    "macro_page": "macro_data", "valuation_history": "other",
 }
 
 _FOCUS = {
@@ -46,6 +46,7 @@ _FOCUS = {
     "valuepickr": "Distinct bull arguments and bear arguments (verbatim, attribute as 'forum claim'); factual claims worth verifying. NEVER as fact — always as claims.",
     "sector_page": "Industry data points (volumes, prices, growth rates) with their periods; association/agency outlook statements — capture BOTH the recent view and any medium-term view.",
     "macro_page": "Indicator values with dates; official/institutional forecasts with horizon; policy decisions with effective dates.",
+    "valuation_history": "THIS COMPANY's historical valuation multiple series ONLY: every year-to-P/E pair as a metric_candidate named 'pe' with that single year as period_printed (same for 'pb' and EV/EBITDA where shown). SKIP peer/other-company rows entirely; skip averages, medians and multi-year ranges (only single-period values); skip commentary and price targets.",
 }
 
 _SCHEMA = """Return ONLY this JSON (no commentary):
@@ -92,10 +93,12 @@ TOP-LEVEL keys (siblings of "sources"), built ACROSS the calls:
 "dropped" = guidance silently stopped being mentioned in later calls.
 Same rules: verbatim quotes, no arithmetic, no inference beyond the text."""
 
-# Output budgets: extraction lists are long; reasoning models also spend
-# hidden thinking tokens inside max_tokens (HANDOFF2 §6.12).
-_EXTRACT_MAX_TOKENS = 32768
-_BATCH_EXTRACT_MAX_TOKENS = 49152
+# Output budgets: provider cap (64K on Fireworks). Extraction output is
+# genuinely long — a 213-page AR under the every-cell focus produced >32K
+# tokens of VISIBLE output (not reasoning) and truncated mid-JSON on a
+# reingest. Reasoning tokens also live inside this budget (HANDOFF2 §6.12).
+_EXTRACT_MAX_TOKENS = 64000
+_BATCH_EXTRACT_MAX_TOKENS = 64000
 
 
 def _instruction(doc_class: str, inline: bool = False, n_sources: int = 1,
@@ -194,7 +197,10 @@ def _screener_via_parser(read, pools, state, entities) -> bool:
                 metadata={"doc_class": "screener_page", "layer": "company",
                           "parser": "screener_parser",
                           "ticker": state["profile"]["ticker"]})
-        if parsed["about"] and (created or not persist):
+        # ALWAYS pooled (save_evidence is idempotent since Phase 5): on
+        # reuse runs the peers' 'about' passages were skipped, leaving G's
+        # peer evidence packs empty
+        if parsed["about"]:
             ev_id = db.save_evidence(doc_id, parsed["about"]) if persist else \
                 f"mem_{len(pools['evidence_pool'])}"
             pools["evidence_pool"].append({
@@ -224,25 +230,33 @@ def _extract_call(get_text, label: str) -> dict | None:
     reprompt-once exception on malformed JSON (Phase 2.7). get_text is
     called with the extra reprompt suffix ('' first time). Returns the
     parsed dict or None (skip)."""
-    try:
-        text = get_text("")
-    except CallDeadlineError:
-        print(f"  [s2][warn] deadline expired — skipping {label}")
+    def _attempt(extra):
+        """One extraction attempt. Truncation is retry-worthy (shares the
+        single reprompt budget); deadline skips; other LLM errors abort."""
+        try:
+            return parse_json_lenient(get_text(extra)), False
+        except CallDeadlineError:
+            print(f"  [s2][warn] deadline expired — skipping {label}")
+            return None, True
+        except LLMError as e:
+            if "TRUNCATED" in str(e):
+                print(f"  [s2][warn] extraction output truncated for {label}")
+                return None, False
+            raise
+
+    parsed, fatal = _attempt("")
+    if fatal:
         return None
-    parsed = parse_json_lenient(text)
     if parsed and "sources" in parsed:
         return parsed
-    print(f"  [s2][warn] unparseable extraction for {label} — reprompting once")
-    try:
-        text = get_text("\n\nYour previous response was NOT valid JSON. "
-                        "Return ONLY the JSON object described above — "
-                        "no prose, no markdown fences.")
-    except CallDeadlineError:
-        return None
-    parsed = parse_json_lenient(text)
-    if parsed and "sources" in parsed:
+    print(f"  [s2][warn] unusable extraction for {label} — reprompting once")
+    parsed, fatal = _attempt(
+        "\n\nYour previous response was NOT usable (invalid or truncated "
+        "JSON). Return ONLY the JSON object described above — no prose, no "
+        "markdown fences; be terse in passage selection if space is tight.")
+    if not fatal and parsed and "sources" in parsed:
         return parsed
-    print(f"  [s2][warn] still unparseable — skipping {label}")
+    print(f"  [s2][warn] still unusable — skipping {label}")
     return None
 
 
@@ -315,6 +329,40 @@ def _ingest_sources(parsed: dict, read: dict, ordered_urls: list, pools: dict,
                 generated_by_run_id=state.get("run_id") or None)
 
 
+def _price_history_via_yahoo(state, pools) -> None:
+    """Deterministic monthly price series (zero LLM, fresh every run) —
+    feeds s3's 1y PE-path computation. Never fails the run: absence
+    becomes an insufficiency downstream."""
+    profile = state["profile"]
+    try:
+        from src.ingestion.fetcher import fetch_price_history
+        tokens = [t.lower() for t in ([profile["name"].split()[0]] +
+                                      list(profile.get("aliases") or []))
+                  if len(t) >= 4]
+        points, url, long_name = fetch_price_history(profile["ticker"], tokens)
+    except Exception as e:
+        print(f"  [s2][warn] price history unavailable ({e}) — "
+              f"1y PE path will be an insufficiency")
+        return
+    doc_id = None
+    if state["persist"]:
+        doc_id, _ = db.save_source_document(
+            doc_type="other", title=f"Price history 1y ({long_name})",
+            url_or_path=url, text_for_hash=json.dumps(points),
+            metadata={"doc_class": "price_history", "layer": "company",
+                      "ticker": profile["ticker"]})
+    for label, close in points:
+        pools["metric_candidates"].append({
+            "name": "price", "value_printed": str(close),
+            "period_printed": label, "basis": None, "statement": "price",
+            "ambiguous": False, "doc_class": "price_history", "url": url,
+            "source_document_id": doc_id})
+    pools["read_log"].append({"url": url, "outcome": "parsed",
+                              "metrics": len(points)})
+    print(f"  [s2] price history (no LLM): {len(points)} monthly closes "
+          f"({long_name})")
+
+
 def extract_node(state) -> dict:
     if state.get("dry_run"):
         from src.pipeline.dry_run import synthetic_extraction
@@ -331,6 +379,8 @@ def extract_node(state) -> dict:
              "events": [], "read_log": [],
              "guidance_evolution": [], "recurring_themes": []}
     seen_doc_ids: set = set()   # a doc reachable via >1 URL loads once (Phase 0.4)
+
+    _price_history_via_yahoo(state, pools)
 
     url_plan = _batch_concall_reads(state["url_plan"])
 
@@ -398,12 +448,21 @@ def extract_node(state) -> dict:
                 fallback_urls.append(url)
                 continue
             # Phase 3.6: don't spend extraction on a mis-targeted "deck"
-            # (news-list pages posing as investor presentations)
+            # (news-list pages posing as investor presentations). A TRUSTED
+            # URL (screener-sourced) failing validation means the server
+            # served us junk this attempt — fall back to url_context
+            # instead of skipping (a real BSE deck was once rejected on a
+            # transient interstitial).
             if read["doc_class"] == "investor_presentation" and \
                     not looks_like_presentation(doc):
-                print(f"  [s2][warn] not a presentation (mis-target) — "
-                      f"skipping: {url}")
-                pools["read_log"].append({"url": url, "outcome": "mistarget"})
+                if read.get("trusted"):
+                    print(f"  [s2] trusted deck failed local validation — "
+                          f"url_context fallback: {url}")
+                    fallback_urls.append(url)
+                else:
+                    print(f"  [s2][warn] not a presentation (mis-target) — "
+                          f"skipping: {url}")
+                    pools["read_log"].append({"url": url, "outcome": "mistarget"})
                 continue
             inline_urls.append(url)
             inline_docs[url] = doc

@@ -1,0 +1,139 @@
+{
+  "fingerprint": {
+    "claim_checks": 30,
+    "quality": {
+      "total": 515,
+      "unresolved": 2,
+      "verified_supported": 177,
+      "verified_total": 192
+    },
+    "sections": {
+      "B": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 2,
+          "narrative": 5,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 8
+      },
+      "C": {
+        "blocks": {
+          "metric_card": 1,
+          "narrative": 6,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 9
+      },
+      "D": {
+        "blocks": {
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 2
+        },
+        "claims": 20,
+        "insufficiencies": 11
+      },
+      "D1": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 3,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 2
+        },
+        "claims": 18,
+        "insufficiencies": 8
+      },
+      "D2": {
+        "blocks": {
+          "flag": 2,
+          "metric_card": 1,
+          "narrative": 5,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 7
+      },
+      "D3": {
+        "blocks": {
+          "flag": 2,
+          "metric_card": 1,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 5
+      },
+      "E": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 1,
+          "narrative": 5,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 8
+      },
+      "F": {
+        "blocks": {
+          "flag": 6,
+          "metric_card": 2,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 18,
+        "insufficiencies": 9
+      },
+      "G": {
+        "blocks": {
+          "flag": 1,
+          "metric_card": 1,
+          "narrative": 4,
+          "table": 1
+        },
+        "claims": 13,
+        "insufficiencies": 6
+      },
+      "H": {
+        "blocks": {
+          "flag": 1,
+          "metric_card": 1,
+          "narrative": 1,
+          "ranked_list": 2
+        },
+        "claims": 20,
+        "insufficiencies": 8
+      },
+      "I": {
+        "blocks": {
+          "flag": 1,
+          "metric_card": 2,
+          "narrative": 7,
+          "table": 1
+        },
+        "claims": 14,
+        "insufficiencies": 6
+      },
+      "J": {
+        "blocks": {
+          "narrative": 1,
+          "ranked_list": 3
+        },
+        "claims": 10,
+        "insufficiencies": 8
+      }
+    }
+  },
+  "frozen_at": "2026-07-18T09:55:14.157194+00:00",
+  "report_version_id": "b14b5ef6-4373-4251-97f5-c85ab6dd2546",
+  "ticker": "SONACOMS",
+  "version": 18
+}

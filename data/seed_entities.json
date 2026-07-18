@@ -1,95 +1,495 @@
 {
-  "_comment": "Hand-curated pilot entity set for the Sona BLW pilot (HANDOFF.md §9, Sprint 1). Deliberately no NER — ingestion substring-matches these names against evidence text. Relationship refs use 'name|type'.",
+  "_comment": "Hand-curated pilot entity set for the Sona BLW pilot (HANDOFF.md \u00c2\u00a79, Sprint 1). Deliberately no NER \u00e2\u20ac\u201d ingestion substring-matches these names against evidence text. Relationship refs use 'name|type'.",
   "entities": [
-    { "name": "Sona BLW Precision Forgings Limited (Sona Comstar)", "type": "company", "metadata": { "ticker": "SONACOMS", "aliases": ["Sona BLW", "Sona Comstar"] } },
-
-    { "name": "Auto Components", "type": "sector", "metadata": { "country": "India" } },
-    { "name": "Automobiles", "type": "sector", "metadata": { "country": "India" } },
-
-    { "name": "Steel", "type": "commodity", "metadata": {} },
-    { "name": "Specialty Alloys", "type": "commodity", "metadata": {} },
-    { "name": "Copper", "type": "commodity", "metadata": {} },
-    { "name": "Rare Earth Magnets", "type": "commodity", "metadata": { "aliases": ["NdFeB", "neodymium"] } },
-    { "name": "Crude Oil", "type": "commodity", "metadata": {} },
-
-    { "name": "INR/USD Exchange Rate", "type": "macro_factor", "metadata": { "aliases": ["rupee", "INR"] } },
-    { "name": "RBI Repo Rate", "type": "macro_factor", "metadata": { "aliases": ["repo rate"] } },
-    { "name": "EV Adoption", "type": "macro_factor", "metadata": { "aliases": ["electric vehicle", "BEV", "electrification"] } },
-    { "name": "Global OEM Capex Cycle", "type": "macro_factor", "metadata": {} },
-    { "name": "Monsoon / Rural Demand", "type": "macro_factor", "metadata": {} },
-
-    { "name": "PLI Scheme (Auto & Auto Components)", "type": "policy", "metadata": { "aliases": ["PLI"] } },
-    { "name": "FAME / EV Incentives", "type": "policy", "metadata": { "aliases": ["FAME II"] } },
-    { "name": "US Import Tariffs on Auto Parts", "type": "policy", "metadata": { "aliases": ["tariff"] } },
-    { "name": "China Rare Earth Export Controls", "type": "policy", "metadata": {} },
-
-    { "name": "India", "type": "geography", "metadata": {} },
-    { "name": "North America", "type": "geography", "metadata": {} },
-    { "name": "Europe", "type": "geography", "metadata": {} },
-    { "name": "China", "type": "geography", "metadata": {} },
-
-    { "name": "Bharat Forge", "type": "company", "metadata": { "ticker": "BHARATFORG", "role": "peer" } },
-    { "name": "Samvardhana Motherson International", "type": "company", "metadata": { "ticker": "MOTHERSON", "role": "peer", "aliases": ["Motherson"] } },
-    { "name": "Uno Minda", "type": "company", "metadata": { "ticker": "UNOMINDA", "role": "peer" } },
-    { "name": "Schaeffler India", "type": "company", "metadata": { "ticker": "SCHAEFFLER", "role": "peer" } },
-    { "name": "Endurance Technologies", "type": "company", "metadata": { "ticker": "ENDURANCE", "role": "peer" } },
-    { "name": "Sansera Engineering", "type": "company", "metadata": { "ticker": "SANSERA", "role": "peer" } },
-    { "name": "Happy Forgings", "type": "company", "metadata": { "ticker": "HAPPYFORGE", "role": "peer" } },
-    { "name": "Ramkrishna Forgings", "type": "company", "metadata": { "ticker": "RKFORGE", "role": "peer" } },
-
-    { "name": "Tata Motors", "type": "company", "metadata": { "ticker": "TATAMOTORS", "role": "peer" } },
-    { "name": "Hyundai Motor India", "type": "company", "metadata": { "ticker": "HYUNDAI", "role": "peer", "aliases": ["Hyundai"] } },
-
-    { "name": "Bosch", "type": "company", "metadata": { "role": "customer" } },
-    { "name": "Tesla", "type": "company", "metadata": { "role": "reported_customer" } },
-    { "name": "Ford", "type": "company", "metadata": { "role": "customer" } },
-    { "name": "General Motors", "type": "company", "metadata": { "role": "customer", "aliases": ["GM"] } },
-    { "name": "Stellantis", "type": "company", "metadata": { "role": "customer" } },
-    { "name": "Maruti Suzuki", "type": "company", "metadata": { "ticker": "MARUTI", "role": "customer" } },
-    { "name": "Mahindra & Mahindra", "type": "company", "metadata": { "ticker": "M&M", "role": "customer", "aliases": ["Mahindra"] } },
-    { "name": "Ashok Leyland", "type": "company", "metadata": { "ticker": "ASHOKLEY", "role": "customer" } },
-    { "name": "Escorts Kubota", "type": "company", "metadata": { "ticker": "ESCORTS", "role": "customer" } }
+    {
+      "name": "Sona BLW Precision Forgings Limited (Sona Comstar)",
+      "type": "company",
+      "metadata": {
+        "ticker": "SONACOMS",
+        "aliases": [
+          "Sona BLW",
+          "Sona Comstar"
+        ]
+      }
+    },
+    {
+      "name": "Auto Components",
+      "type": "sector",
+      "metadata": {
+        "country": "India"
+      }
+    },
+    {
+      "name": "Automobiles",
+      "type": "sector",
+      "metadata": {
+        "country": "India"
+      }
+    },
+    {
+      "name": "Steel",
+      "type": "commodity",
+      "metadata": {}
+    },
+    {
+      "name": "Specialty Alloys",
+      "type": "commodity",
+      "metadata": {}
+    },
+    {
+      "name": "Copper",
+      "type": "commodity",
+      "metadata": {}
+    },
+    {
+      "name": "Rare Earth Magnets",
+      "type": "commodity",
+      "metadata": {
+        "aliases": [
+          "NdFeB",
+          "neodymium"
+        ]
+      }
+    },
+    {
+      "name": "Crude Oil",
+      "type": "commodity",
+      "metadata": {}
+    },
+    {
+      "name": "INR/USD Exchange Rate",
+      "type": "macro_factor",
+      "metadata": {
+        "aliases": [
+          "rupee",
+          "INR"
+        ]
+      }
+    },
+    {
+      "name": "RBI Repo Rate",
+      "type": "macro_factor",
+      "metadata": {
+        "aliases": [
+          "repo rate"
+        ]
+      }
+    },
+    {
+      "name": "EV Adoption",
+      "type": "macro_factor",
+      "metadata": {
+        "aliases": [
+          "electric vehicle",
+          "BEV",
+          "electrification"
+        ]
+      }
+    },
+    {
+      "name": "Global OEM Capex Cycle",
+      "type": "macro_factor",
+      "metadata": {}
+    },
+    {
+      "name": "Monsoon / Rural Demand",
+      "type": "macro_factor",
+      "metadata": {}
+    },
+    {
+      "name": "PLI Scheme (Auto & Auto Components)",
+      "type": "policy",
+      "metadata": {
+        "aliases": [
+          "PLI"
+        ]
+      }
+    },
+    {
+      "name": "FAME / EV Incentives",
+      "type": "policy",
+      "metadata": {
+        "aliases": [
+          "FAME II"
+        ]
+      }
+    },
+    {
+      "name": "US Import Tariffs on Auto Parts",
+      "type": "policy",
+      "metadata": {
+        "aliases": [
+          "tariff"
+        ]
+      }
+    },
+    {
+      "name": "China Rare Earth Export Controls",
+      "type": "policy",
+      "metadata": {}
+    },
+    {
+      "name": "India",
+      "type": "geography",
+      "metadata": {}
+    },
+    {
+      "name": "North America",
+      "type": "geography",
+      "metadata": {}
+    },
+    {
+      "name": "Europe",
+      "type": "geography",
+      "metadata": {}
+    },
+    {
+      "name": "China",
+      "type": "geography",
+      "metadata": {}
+    },
+    {
+      "name": "Bharat Forge",
+      "type": "company",
+      "metadata": {
+        "ticker": "BHARATFORG",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Samvardhana Motherson International",
+      "type": "company",
+      "metadata": {
+        "ticker": "MOTHERSON",
+        "role": "peer",
+        "aliases": [
+          "Motherson"
+        ]
+      }
+    },
+    {
+      "name": "Uno Minda",
+      "type": "company",
+      "metadata": {
+        "ticker": "UNOMINDA",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Schaeffler India",
+      "type": "company",
+      "metadata": {
+        "ticker": "SCHAEFFLER",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Endurance Technologies",
+      "type": "company",
+      "metadata": {
+        "ticker": "ENDURANCE",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Sansera Engineering",
+      "type": "company",
+      "metadata": {
+        "ticker": "SANSERA",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Happy Forgings",
+      "type": "company",
+      "metadata": {
+        "ticker": "HAPPYFORGE",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Ramkrishna Forgings",
+      "type": "company",
+      "metadata": {
+        "ticker": "RKFORGE",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Tata Motors Passenger Vehicles",
+      "type": "company",
+      "metadata": {
+        "ticker": "TMPV",
+        "role": "peer"
+      }
+    },
+    {
+      "name": "Hyundai Motor India",
+      "type": "company",
+      "metadata": {
+        "ticker": "HYUNDAI",
+        "role": "peer",
+        "aliases": [
+          "Hyundai"
+        ]
+      }
+    },
+    {
+      "name": "Bosch",
+      "type": "company",
+      "metadata": {
+        "role": "customer"
+      }
+    },
+    {
+      "name": "Tesla",
+      "type": "company",
+      "metadata": {
+        "role": "reported_customer"
+      }
+    },
+    {
+      "name": "Ford",
+      "type": "company",
+      "metadata": {
+        "role": "customer"
+      }
+    },
+    {
+      "name": "General Motors",
+      "type": "company",
+      "metadata": {
+        "role": "customer",
+        "aliases": [
+          "GM"
+        ]
+      }
+    },
+    {
+      "name": "Stellantis",
+      "type": "company",
+      "metadata": {
+        "role": "customer"
+      }
+    },
+    {
+      "name": "Maruti Suzuki",
+      "type": "company",
+      "metadata": {
+        "ticker": "MARUTI",
+        "role": "customer"
+      }
+    },
+    {
+      "name": "Mahindra & Mahindra",
+      "type": "company",
+      "metadata": {
+        "ticker": "M&M",
+        "role": "customer",
+        "aliases": [
+          "Mahindra"
+        ]
+      }
+    },
+    {
+      "name": "Ashok Leyland",
+      "type": "company",
+      "metadata": {
+        "ticker": "ASHOKLEY",
+        "role": "customer"
+      }
+    },
+    {
+      "name": "Escorts Kubota",
+      "type": "company",
+      "metadata": {
+        "ticker": "ESCORTS",
+        "role": "customer"
+      }
+    },
+    {
+      "name": "Tata Motors CV",
+      "type": "company",
+      "metadata": {
+        "ticker": "TMCV"
+      }
+    }
   ],
   "relationships": [
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Auto Components|sector", "type": "belongs_to_sector" },
-    { "from": "Mahindra & Mahindra|company", "to": "Automobiles|sector", "type": "belongs_to_sector" },
-    { "from": "Tata Motors|company", "to": "Mahindra & Mahindra|company", "type": "peer_of" },
-    { "from": "Hyundai Motor India|company", "to": "Mahindra & Mahindra|company", "type": "peer_of" },
-    { "from": "Maruti Suzuki|company", "to": "Mahindra & Mahindra|company", "type": "peer_of" },
-    { "from": "Escorts Kubota|company", "to": "Mahindra & Mahindra|company", "type": "peer_of" },
-    { "from": "Monsoon / Rural Demand|macro_factor", "to": "Mahindra & Mahindra|company", "type": "demand_driver_for" },
-    { "from": "Steel|commodity", "to": "Mahindra & Mahindra|company", "type": "input_cost_for" },
-
-    { "from": "Steel|commodity", "to": "Auto Components|sector", "type": "input_cost_for" },
-    { "from": "Specialty Alloys|commodity", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "input_cost_for" },
-    { "from": "Rare Earth Magnets|commodity", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "input_cost_for" },
-    { "from": "Copper|commodity", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "input_cost_for" },
-
-    { "from": "China Rare Earth Export Controls|policy", "to": "Rare Earth Magnets|commodity", "type": "supply_constraint_on" },
-    { "from": "PLI Scheme (Auto & Auto Components)|policy", "to": "Auto Components|sector", "type": "incentivizes" },
-    { "from": "FAME / EV Incentives|policy", "to": "EV Adoption|macro_factor", "type": "supports" },
-    { "from": "US Import Tariffs on Auto Parts|policy", "to": "Auto Components|sector", "type": "risk_for" },
-
-    { "from": "INR/USD Exchange Rate|macro_factor", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "affects_exports_of" },
-    { "from": "RBI Repo Rate|macro_factor", "to": "Automobiles|sector", "type": "demand_driver_for" },
-    { "from": "EV Adoption|macro_factor", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "demand_driver_for" },
-
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Bosch|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Ford|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "General Motors|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Stellantis|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Maruti Suzuki|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Mahindra & Mahindra|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Ashok Leyland|company", "type": "supplies_to" },
-    { "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "to": "Escorts Kubota|company", "type": "supplies_to" },
-
-    { "from": "Bharat Forge|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Samvardhana Motherson International|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Uno Minda|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Schaeffler India|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Endurance Technologies|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Sansera Engineering|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Happy Forgings|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" },
-    { "from": "Ramkrishna Forgings|company", "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company", "type": "peer_of" }
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Auto Components|sector",
+      "type": "belongs_to_sector"
+    },
+    {
+      "from": "Mahindra & Mahindra|company",
+      "to": "Automobiles|sector",
+      "type": "belongs_to_sector"
+    },
+    {
+      "from": "Tata Motors|company",
+      "to": "Mahindra & Mahindra|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Hyundai Motor India|company",
+      "to": "Mahindra & Mahindra|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Maruti Suzuki|company",
+      "to": "Mahindra & Mahindra|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Escorts Kubota|company",
+      "to": "Mahindra & Mahindra|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Monsoon / Rural Demand|macro_factor",
+      "to": "Mahindra & Mahindra|company",
+      "type": "demand_driver_for"
+    },
+    {
+      "from": "Steel|commodity",
+      "to": "Mahindra & Mahindra|company",
+      "type": "input_cost_for"
+    },
+    {
+      "from": "Steel|commodity",
+      "to": "Auto Components|sector",
+      "type": "input_cost_for"
+    },
+    {
+      "from": "Specialty Alloys|commodity",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "input_cost_for"
+    },
+    {
+      "from": "Rare Earth Magnets|commodity",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "input_cost_for"
+    },
+    {
+      "from": "Copper|commodity",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "input_cost_for"
+    },
+    {
+      "from": "China Rare Earth Export Controls|policy",
+      "to": "Rare Earth Magnets|commodity",
+      "type": "supply_constraint_on"
+    },
+    {
+      "from": "PLI Scheme (Auto & Auto Components)|policy",
+      "to": "Auto Components|sector",
+      "type": "incentivizes"
+    },
+    {
+      "from": "FAME / EV Incentives|policy",
+      "to": "EV Adoption|macro_factor",
+      "type": "supports"
+    },
+    {
+      "from": "US Import Tariffs on Auto Parts|policy",
+      "to": "Auto Components|sector",
+      "type": "risk_for"
+    },
+    {
+      "from": "INR/USD Exchange Rate|macro_factor",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "affects_exports_of"
+    },
+    {
+      "from": "RBI Repo Rate|macro_factor",
+      "to": "Automobiles|sector",
+      "type": "demand_driver_for"
+    },
+    {
+      "from": "EV Adoption|macro_factor",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "demand_driver_for"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Bosch|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Ford|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "General Motors|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Stellantis|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Maruti Suzuki|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Mahindra & Mahindra|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Ashok Leyland|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "to": "Escorts Kubota|company",
+      "type": "supplies_to"
+    },
+    {
+      "from": "Bharat Forge|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Samvardhana Motherson International|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Uno Minda|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Schaeffler India|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Endurance Technologies|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Sansera Engineering|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Happy Forgings|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    },
+    {
+      "from": "Ramkrishna Forgings|company",
+      "to": "Sona BLW Precision Forgings Limited (Sona Comstar)|company",
+      "type": "peer_of"
+    }
   ]
 }

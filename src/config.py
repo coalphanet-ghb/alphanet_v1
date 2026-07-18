@@ -47,6 +47,10 @@ FIREWORKS_API_URL = os.environ.get(
     "FIREWORKS_API_URL", "https://api.fireworks.ai/inference/v1/chat/completions")
 FIREWORKS_MODEL = os.environ.get("FIREWORKS_MODEL", "accounts/fireworks/models/minimax-m3")
 FIREWORKS_RPM = int(os.environ.get("FIREWORKS_RPM", "30"))
+# USD per 1M tokens (Phase 5 cost telemetry; override in .env when
+# Fireworks reprices — these are the serverless MiniMax-M3 list prices)
+FIREWORKS_COST_IN_PER_M = float(os.environ.get("FIREWORKS_COST_IN_PER_M", "0.55"))
+FIREWORKS_COST_OUT_PER_M = float(os.environ.get("FIREWORKS_COST_OUT_PER_M", "2.19"))
 
 
 def fireworks_configured() -> bool:
@@ -86,7 +90,11 @@ COMPANIES = [
         "segments": ["EV driveline", "differential assemblies"],
         "aliases": ["Sona BLW", "Sona Comstar"],
         "screener_slug": "SONACOMS",
-        "peer_screener_slugs": ["BHARATFORG", "UNOMINDA", "SCHAEFFLER", "ENDURANCE"],
+        "peer_screener_slugs": ["BHARATFORG", "UNOMINDA", "SCHAEFFLER", "ENDURANCE",
+                                "MOTHERSON", "SANSERA", "HAPPYFORGE", "RKFORGE"],
+        # PE-history comes from ticker-derived URL templates in s1 (with
+        # identity validation); add "valuation_history_url" here ONLY as a
+        # rare per-company escape hatch when the templates miss.
     },
     {
         "label": "M&M",
@@ -96,7 +104,9 @@ COMPANIES = [
         "segments": ["SUV", "tractor", "commercial vehicle"],
         "aliases": ["Mahindra", "M&M"],
         "screener_slug": "M%26M",
-        "peer_screener_slugs": ["TATAMOTORS", "MARUTI", "ESCORTS"],
+        # Tata Motors demerged (2025): TMPV = passenger vehicles (the SUV
+        # comparator), TMCV = the CV entity; old TATAMOTORS slug 404s
+        "peer_screener_slugs": ["TMPV", "TMCV", "MARUTI", "ESCORTS", "HYUNDAI"],
     },
 ]
 
@@ -127,6 +137,7 @@ TIER1_DOMAINS = [
 BLOCKED_DOMAINS = [
     "nseindia.com",              # bot-hostile; BSE mirrors filings
     "facebook.com", "x.com", "twitter.com", "linkedin.com", "youtube.com",
+    "instagram.com",             # a reel once landed in an M&M news batch
     "morningstar.com", "marketscreener.com", "gurufocus.com",  # transcript paywalls
     "careratingtracker.com",     # agency index page, not rationales
 ]

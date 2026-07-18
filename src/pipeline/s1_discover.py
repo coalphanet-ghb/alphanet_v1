@@ -6,7 +6,7 @@ Spec: nodes/s1_discover. Emits the url_plan s2 executes.
 import json
 import os
 import time
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 
 import requests
 
@@ -162,6 +162,10 @@ def discover_node(state) -> dict:
 
     profile, pack, plan = state["profile"], state["pack"], state["read_plan"]
     slots = {"company": profile["name"], "ticker": profile["ticker"],
+             # short alias for queries where the full legal name drowns the
+             # intent ("... Limited (Sona Comstar) historical pe" returned
+             # only generic quote pages)
+             "company_short": (profile.get("aliases") or [profile["name"]])[0],
              "fy": plan["quarters"][0]["fy"]}
     seen: set = set()
     reads: list[dict] = []
@@ -170,8 +174,9 @@ def discover_node(state) -> dict:
     reads.append({"target": "screener", "doc_class": "screener_page", "priority": 1,
                   "urls": [f"https://www.screener.in/company/{profile['screener_slug']}/consolidated/"],
                   "batch": False})
+    # Phase 5.3: full peer set — screener parses are free (zero LLM)
     peer_urls = [f"https://www.screener.in/company/{s}/consolidated/"
-                 for s in profile.get("peer_screener_slugs", [])[:4]]
+                 for s in profile.get("peer_screener_slugs", [])[:8]]
     if peer_urls:
         reads.append({"target": "peer_screeners", "doc_class": "screener_page",
                       "priority": 2, "urls": peer_urls, "batch": True})
@@ -179,12 +184,23 @@ def discover_node(state) -> dict:
     # --- concalls + AR: screener's Documents links are authoritative (BSE
     # PDFs) and replace ddgs hunting entirely when available (Phase 1)
     from src.config import CONCALL_QUARTERS
-    ar_covered = False
+    ar_covered = ip_covered = False
     transcripts = []
     try:
         from src.ingestion.screener_parser import get_document_links
         links = get_document_links(profile["screener_slug"])
         transcripts = links.get("concall_transcripts", [])[:CONCALL_QUARTERS]
+        # Phase 5.6: latest concall PPT = the authoritative investor deck
+        ppts = links.get("concall_ppts", [])
+        if ppts:
+            # trusted=screener-sourced: a failed local validation falls back
+            # to url_context instead of being skipped as a mis-target
+            reads.append({"target": "investor_presentation",
+                          "doc_class": "investor_presentation", "priority": 1,
+                          "urls": [ppts[0]["url"]], "batch": False, "trusted": True,
+                          "title": f"Investor presentation ({ppts[0]['label']})"})
+            seen.add(ppts[0]["url"])
+            ip_covered = True
         ars = links.get("annual_reports", [])
         if ars:
             reads.append({"target": "annual_report", "doc_class": "annual_report",
@@ -222,9 +238,48 @@ def discover_node(state) -> dict:
             else:
                 print(f"  [s1] no transcript found for {qq['q']}{qq['fy']}")
 
+    # --- valuation history: deterministic URL TEMPLATES from the ticker
+    # (generalized — no per-company URLs; config override is a rare escape
+    # hatch only). Each candidate is fetched and validated for shape AND
+    # company identity before the read is emitted: ddgs is nondeterministic
+    # and a mis-resolved ticker once served another company's page.
+    vh_covered = False
+    vh_candidates = ([profile["valuation_history_url"]]
+                     if profile.get("valuation_history_url") else []) + \
+        [f"https://www.wisesheets.io/pe-ratio/"
+         f"{quote(profile['ticker'], safe='')}.NS"]
+    company_tokens = [t.lower() for t in
+                      ([profile["name"].split()[0]] +
+                       list(profile.get("aliases") or []))
+                      if len(t) >= 4]
+    for vh_url in vh_candidates:
+        try:
+            from src.ingestion.fetcher import (
+                fetch_document, looks_like_valuation_history)
+            doc = fetch_document(vh_url)
+            if not looks_like_valuation_history(doc, company_tokens):
+                print(f"  [s1] valuation-history candidate failed identity/"
+                      f"shape validation — skipping: {vh_url}")
+                continue
+        except Exception as e:
+            print(f"  [s1] valuation-history candidate unreachable ({e}) — "
+                  f"skipping: {vh_url}")
+            continue
+        reads.append({"target": "valuation_history",
+                      "doc_class": "valuation_history", "priority": 2,
+                      "urls": [vh_url], "batch": False,
+                      "title": "PE ratio history"})
+        seen.add(vh_url)
+        vh_covered = True
+        break
+
     # --- company docs
     for tmpl, doc_class, prio, n in COMPANY_DOC_QUERIES:
         if doc_class == "annual_report" and ar_covered:
+            continue
+        if doc_class == "investor_presentation" and ip_covered:
+            continue
+        if doc_class == "valuation_history" and vh_covered:
             continue
         found = _search([(tmpl.format(**slots), doc_class, n)], seen, timelimit="y")
         if not found:

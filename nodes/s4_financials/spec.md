@@ -1,80 +1,75 @@
-# s4_financials — Financial Analysis writer (LLM) → section D
+# s4_financials — integrated financial synthesis (s4e, LLM) → section D
 
 ## Purpose
-Write blueprint section D (D1 P&L / D2 Balance Sheet / D3 Cash Flow +
-forensic verdicts) — strictly FROM computed tables. Reader-question:
-*"Is this a good business, financially, and is it getting better or
-worse?"* This node interprets; it never calculates.
+Integrate the three statement-forensic envelopes (D1 P&L, D2 Balance
+Sheet, D3 Cash Flow) into blueprint section D: cross-statement
+triangulation, quality-of-earnings verdict, ratio-vs-pack-norms, and
+the claims-vs-numbers scoreboard. Reader-question: *"Is this a good
+business, financially, and is it getting better or worse?"* This node
+synthesizes ACROSS statements; single-statement findings are cited from
+the D1/D2/D3 blocks (sec:D1.<id> etc.), never re-derived.
 
 ## Inputs
-- `computed_financials`, `forensic_flags`, `guidance_scorecard` (margin
-  guidance context), concall/AR evidence passages (explanatory color only)
-- `[[SECTOR_OVERLAY:financials]]` (D-adaptations, KPI norms, N/A modules,
-  forensic signatures)
+- D1/D2/D3 envelope summaries (blocks pre-labelled [sec:D1.x] etc.)
+- Pooled `claim_checks[]` from the statement nodes + follow-up answers
+- `computed_financials`, forensic battery, guidance scorecard (for
+  cross-statement reads the statement nodes could not make alone)
+- `[[SECTOR_OVERLAY:financials]]` (norms, N/A modules)
 
 ## Instructions
 
-**D1 — P&L (blocks: metric_card + narrative per sub-topic):**
-1. Growth: state 3y CAGR, 5y CAGR, TTM momentum — when they disagree,
-   the disagreement is the headline ("5y CAGR 18% but TTM growth 6% —
-   growth is decelerating"). Decompose per calc (volume/price/mix,
-   organic vs M&A) — attribute, never hand-wave. Compare vs industry
-   print → share gain/loss in points (calc).
-2. Margins: trajectory + the margin bridge (calc) narrated by component
-   ("of the 310bps EBITDA compression, RM took 240bps [calc:margin_bridge]").
-   Operating-leverage elasticity where computed. Ex-exceptional variants
-   when exceptionals exist — state both.
-3. Returns: ROE/ROCE trend vs ~11–13% cost-of-capital context; **the
-   DuPont sentence is mandatory**: name WHICH lever (margin/turns/leverage
-   or tax/interest burden) drives the trend, per calc:dupont_5.
-4. P&L quality: interpret the computed flags — other-income dependence,
-   tax-rate anomalies, EPS-vs-PAT divergence (dilution), depreciation-rate
-   drift. Each flagged item gets one plain-English sentence on WHY it
-   matters.
-5. **Sub-block verdict lines** (one each, ≤15 words): growth quality,
-   margin direction, returns adequacy.
+Output envelope section is "D". Also emit two top-level extras:
 
-**D2 — Balance Sheet:**
-1. Strength read: leverage/coverage/liquidity vs pack norms (metric_card
-   + one narrative paragraph). Cross-reference the rating agency's view
-   where evidence has it.
-2. Working capital: CCC series interpretation; negative-WC float
-   erosion if applicable.
-3. **Forensic panel (flag blocks, verbatim from forensic_flags):** render
-   every WATCH/FLAG with its deterministic rationale + one sentence of
-   interpretation + severity. OK checks are summarized in one line
-   ("9 of 12 checks clean"). NEVER soften a FLAG; never elevate an OK.
-4. Asset-side & liability-side notables: CWIP aging, cash-yield/borrowing
-   -rate test outcomes, contingents/net-worth, pledge — only where the
-   computed check or evidence says something.
+"risk_candidates_for_H": [{"risk": "<one line>", "source":
+   "sec:D*.<block> or claim_check", "severity": "low|medium|high"}]
+   — every contradicted claim_check and every high-severity forensic
+   finding becomes a candidate.
+"credibility_notes_for_F": ["<one line per non-corroborated claim_check:
+   what management said vs what the numbers show>"]
 
-**D3 — Cash Flow:**
-1. Earnings-to-cash: CFO/EBITDA 5y median + worst year; Sloan accruals;
-   ΣPAT vs ΣCFO verdict sentence.
-2. FCF: trend, conversion, growth-vs-maintenance split as computed.
-3. Deployment personality: narrate the computed sources-and-uses — where
-   the cash went and whether payout was operations-funded or borrowed.
-
-**Ordering rule:** lead each sub-section with its most decision-relevant
-finding, not with the first metric in the table.
+**Blocks:**
+1. **Integrated verdict narrative** (lead block): the one-paragraph
+   answer to the reader-question, built ONLY from D1/D2/D3 findings
+   (cite sec:D1/D2/D3 blocks) and cross-statement calcs. Lead with the
+   most decision-relevant finding, not the first metric.
+2. **Cross-statement triangulation**: run the fraud-lens pairings the
+   supplied data can support — revenue vs receivables vs CFO
+   (aggressive recognition), PAT vs cash tax paid, EBITDA vs CFO
+   conversion, cash-vs-borrowings-vs-interest-income coherence, capex
+   vs asset turnover vs commissioning, depreciation-rate drift.
+   For each pairing state OK or the anomaly, citing the D-blocks or
+   calc ids that carry the inputs. Pairings the data cannot support go
+   to insufficiencies by name.
+3. **DuPont driver sentence** (from D2, cited sec:D2.*) restated in the
+   integrated context: which lever drives ROE and whether the P&L and
+   CF stories are consistent with it.
+4. **Quality of earnings**: one verdict paragraph joining D1's earnings
+   quality, D3's cash conversion, and the accrual/battery evidence.
+5. **Ratio-vs-pack-norms table**: company's key ratios against the
+   sector KPI norms supplied (quote norms as 'sector norm'); flag
+   outside-range cells.
+6. **Claims-vs-numbers scoreboard (table block, mandatory)**: one row
+   per claim_check — claim (shortened), computed_ref, verdict, note.
+   Corroborated / contradicted / unverifiable counts in the title.
+   NEVER drop a contradicted row. Every cell holds that row's own value
+   for that column ("—" when absent) — never a number from another row.
+7. **Sub-block verdict lines** for D1/D2/D3 (one each, ≤15 words,
+   citing the sub-envelope).
 
 ## Prohibited
-Recomputing/deriving anything; averaging periods; annualizing quarters;
-"strong/weak" without the number; omitting a FLAG; sector-inappropriate
-metrics (overlay lists them — e.g., no EBITDA language for lenders).
+Recomputing or re-deriving statement-level findings (cite sec:D1/D2/D3);
+arithmetic; softening contradicted verdicts; averaging; verdict
+vocabulary (cheap/expensive); omitting the scoreboard.
+Note on claims[]: your context is mostly sec:/calc material with FEW raw
+evidence uuids — put a statement in claims[] ONLY when a genuine evidence
+uuid from your context supports it (e.g. from a claim_check row); all
+other findings live in blocks with sec:/calc citations. Do not invent or
+adapt uuids to force a claim.
 
 ## Quality checklist
-- [ ] Every number traces to calc:* or evidence UUID
-- [ ] 3y/5y/TTM disagreements surfaced, not smoothed
-- [ ] DuPont driver sentence present
-- [ ] Every WATCH/FLAG rendered with severity + interpretation
-- [ ] Verdict lines present for D1/D2/D3
-- [ ] insufficiencies lists every checklist item context couldn't support
-
-## Golden example (forensic flag rendering)
-flag{check:"cash_yield_test", status:"FLAG", severity:"high",
-md:"Interest income implies a 1.9% yield on ₹3,100 cr average cash
-[calc:cash_yield] against 6–7% available on deposits — either the balance
-is encumbered or overstated; borrowings rose ₹800 cr in the same period
-[calc:leverage], which is inconsistent with genuinely idle cash.",
-citations:["calc:cash_yield","calc:leverage_series"]}
+- [ ] Lead block answers the reader-question with cited findings
+- [ ] Every triangulation pairing either run or named as insufficiency
+- [ ] Scoreboard present with every claim_check row
+- [ ] risk_candidates_for_H includes every contradicted claim
+- [ ] credibility_notes_for_F written for every non-corroborated claim
+- [ ] Every number cites calc:*, sec:D*.<block>, or an evidence UUID

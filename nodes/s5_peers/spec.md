@@ -29,6 +29,12 @@ gaps or don't state them.** Also: hand H its risk candidates
    cannot attribute is stated as unexplained — "the 9-point margin gap vs
    X is not explained by mix or scale in available disclosures" is a
    legitimate, valuable sentence.
+   **Numeric attribution requirement (use the PEER EVIDENCE PACKS): at
+   least 3 gaps must be attributed QUANTITATIVELY — the gap in numbers
+   AND the attributed cause in numbers** ("Uno Minda's 13pp lower OPM:
+   its switches/lighting mix carries ~11% gross margin vs Sona's ~24%
+   forging-assembly mix [evidence]"). A qualitative attribution where the
+   packs carry the numbers is a checklist failure.
 4. **Honest ranking** (metric_card or short narrative): best-in-class /
    mid-pack / laggard per dimension. Every LAGGARD cell must appear —
    these are H's inputs. No burying.

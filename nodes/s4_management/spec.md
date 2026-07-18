@@ -22,6 +22,11 @@ allocation report card (computed), governance flag battery (evidence).
    direction ("guides conservatively on margins, over-promises on capex
    timelines — 3 of 4 capex completions slipped ≥2 quarters
    [calc:guidance_scorecard]"). Intra-year walk-downs called out.
+   **Table-cell discipline:** every cell holds THAT ROW's own value for
+   THAT column — the "Actual" cell is the actual of the row's own metric
+   and period, with its provenance. If the row's actual is not in
+   context, the cell is "—" (and the gap goes to insufficiencies); never
+   fill a cell with a number belonging to another row or metric.
 2. **Current guidance** (ranked_list): every open commitment: metric,
    period, value, the assumption behind it (from transcript), and what
    would make it credible/incredible given the track record. Separate

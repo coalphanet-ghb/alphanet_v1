@@ -122,11 +122,13 @@ def composer_node(state) -> dict:
     evidence_ids = {e["id"] for e in state.get("evidence_pool", [])}
     calc_ids = set(comp.get("computed_financials", {}).keys()) | {
         "peer_table", "valuation_context", "guidance_scorecard"} | {
-        f"forensic.{f['check']}" for f in comp.get("forensic_flags", [])}
+        f"forensic.{f['check']}" for f in comp.get("forensic_flags", [])} | \
+        set(comp.get("valuation_context", {}).keys())   # pb, pe_1y_path, ...
 
     # every block id from every section is citable as sec:<LETTER>.<block_id>
+    # (D1/D2/D3 are the Phase 4 statement-forensic sub-sections)
     block_ids = set()
-    for letter in "BCDEFGHIJ":
+    for letter in ("B", "C", "D", "D1", "D2", "D3", "E", "F", "G", "H", "I", "J"):
         env = state.get(f"envelope_{letter}") or {}
         for b in env.get("blocks", []):
             if b.get("id"):
@@ -137,11 +139,19 @@ def composer_node(state) -> dict:
     for e in evidence_ids:
         prefix_index[str(e)[:8]] = prefix_index.get(str(e)[:8], 0) + 1
 
+    # edge:/trail: citations resolve against the same deterministic ids
+    # the context renderers labelled them with
+    from src.pipeline.s4_synth import edge_id, trail_id
+    edge_ids = {edge_id(e) for e in state.get("supply_edges", [])}
+    trail_ids = {trail_id(t) for t in state.get("guidance_evolution", [])}
+
     stats = {"total": 0, "unresolved": 0}
 
     def resolve(cite) -> bool:
         stats["total"] += 1
-        c = str(cite).strip()
+        # labels are shown as [edge:x]/[sec:x] — models sometimes cite the
+        # brackets too; strip them before matching
+        c = str(cite).strip().strip("[]")
         ok = False
         if c in evidence_ids or c.startswith("mem_"):
             ok = True
@@ -151,6 +161,10 @@ def composer_node(state) -> dict:
         elif c.startswith("sec:"):
             body = c[4:]
             ok = body in block_ids or body.split(".", 1)[-1] in block_ids
+        elif c.startswith("edge:"):
+            ok = c[5:] in edge_ids
+        elif c.startswith("trail:"):
+            ok = c[6:] in trail_ids
         elif c.startswith("evidence:"):
             ok = c.split(":", 1)[1] in evidence_ids
         elif c in block_ids:
@@ -173,16 +187,9 @@ def composer_node(state) -> dict:
         if v["verdict"] not in ("supported",):
             failed_by_section.setdefault(v["section"], []).append(v)
 
-    for letter in "BCDEFGHIJ":
-        env = state.get(f"envelope_{letter}")
-        lines.append(f"## {letter}. {_SECTION_TITLES[letter]}")
-        lines.append("")
-        if not env:
-            lines.append("_Not generated._")
-            lines.append("")
-            continue
+    def _render_env(env, letter):
         for b in env.get("blocks", []):
-            lines += _render_block(b, resolve)
+            lines.extend(_render_block(b, resolve))
         insuff = env.get("insufficiencies") or []
         if insuff:
             lines.append("<details><summary>Not found in sources</summary>")
@@ -198,6 +205,40 @@ def composer_node(state) -> dict:
             for f in fails[:5]:
                 lines.append(f"> - \"{f['text']}\" — {f['verdict']}: {f['note']}")
             lines.append("")
+
+    _D_SUBS = (("D1", "Profit & Loss (forensic)"),
+               ("D2", "Balance Sheet (forensic)"),
+               ("D3", "Cash Flow (forensic)"))
+
+    for letter in "BCDEFGHIJ":
+        env = state.get(f"envelope_{letter}")
+        lines.append(f"## {letter}. {_SECTION_TITLES[letter]}")
+        lines.append("")
+        if letter == "D":
+            # Phase 4: D = statement sub-sections + integrated synthesis
+            any_sub = False
+            for sub, subtitle in _D_SUBS:
+                sube = state.get(f"envelope_{sub}")
+                if not sube:
+                    continue
+                any_sub = True
+                lines.append(f"### {sub}. {subtitle}")
+                lines.append("")
+                _render_env(sube, sub)
+            if env:
+                if any_sub:
+                    lines.append("### Cross-statement synthesis & scoreboard")
+                    lines.append("")
+                _render_env(env, "D")
+            elif not any_sub:
+                lines.append("_Not generated._")
+                lines.append("")
+            continue
+        if not env:
+            lines.append("_Not generated._")
+            lines.append("")
+            continue
+        _render_env(env, letter)
 
     # K
     lines.append("## K. Sources & Provenance")
@@ -227,7 +268,10 @@ def composer_node(state) -> dict:
         f.write(markdown)
 
     if state.get("persist"):
-        sections_json = {f"section_{l}": state.get(f"envelope_{l}") for l in "BCDEFGHIJ"}
+        sections_json = {f"section_{l}": state.get(f"envelope_{l}")
+                         for l in ("B", "C", "D", "D1", "D2", "D3",
+                                   "E", "F", "G", "H", "I", "J")}
+        sections_json["claim_checks"] = state.get("claim_checks") or []
         sections_json["snapshot_md"] = "\n".join(_snapshot(state))
         sections_json["final_report_md"] = markdown
         sections_json["run_id"] = state.get("run_id") or None

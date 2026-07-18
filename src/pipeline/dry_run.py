@@ -71,7 +71,7 @@ def synthetic_extraction(state) -> dict:
 
 
 def synthetic_envelope(letter: str) -> dict:
-    return {
+    env = {
         "section": letter,
         "blocks": [
             {"type": "narrative", "id": f"{letter.lower()}_dry",
@@ -85,3 +85,17 @@ def synthetic_envelope(letter: str) -> dict:
                     "evidence_ids": ["syn_ev_concall"], "confidence": 1.0}],
         "insufficiencies": ["dry run — everything"],
     }
+    # Phase 4: statement-forensic envelopes carry claim_checks +
+    # followup_requests so the s4d/s4e/F/H paths run in dry-run too.
+    if letter in ("D1", "D2", "D3"):
+        env["claim_checks"] = [
+            {"mgmt_claim": f"(dry) guided 25-27% EBITDA margin ({letter})",
+             "evidence_id": "syn_ev_concall",
+             "computed_ref": "calc:opm_pct_series",
+             "verdict": "contradicted" if letter == "D1" else "corroborated",
+             "note": "(dry) computed series vs guided range"}]
+        env["followup_requests"] = [
+            {"target": "computed" if letter != "D3" else "evidence",
+             "request": f"(dry) follow-up from {letter} on revenue trend",
+             "keywords": ["revenue"]}]
+    return env

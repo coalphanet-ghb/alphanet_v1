@@ -15,6 +15,9 @@ COMPANY_DOC_QUERIES = [
     ("{company} quarterly results press release pdf",           "results_pdf",           1, MAX_RESULTS_DOC_HUNT),
     ("{company} credit rating rationale icra OR crisil OR care", "rating_rationale",     1, MAX_RESULTS_DOC_HUNT),
     ("{company} shareholding pattern promoter pledge",          "shareholding",          2, MAX_RESULTS_DATA),
+    # Phase 5.4: own-history multiple series for I's percentile framing
+    # (short alias: the full legal name buries these hunts in quote pages)
+    ("{company_short} historical pe ratio",                     "valuation_history",     2, MAX_RESULTS_DOC_HUNT),
 ]
 
 CONCALL_QUERY_TEMPLATES = [

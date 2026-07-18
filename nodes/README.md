@@ -16,9 +16,13 @@
 | s2_extract | S2 | LLM (url_context) | — (evidence, metrics, tags) |
 | s3_compute | S3 | deterministic | — (computed tables) |
 | s4_business | S4 | LLM | B |
-| s4_financials | S4 | LLM | D |
+| s4a_pl | S4 | LLM | D1 (P&L forensic + cross-exam) |
+| s4b_bs | S4 | LLM | D2 (BS forensic + cross-exam) |
+| s4c_cf | S4 | LLM | D3 (CF forensic + cross-exam) |
+| s4d_followup | S4 | deterministic + ≤1 LLM | — (follow-up answers, claim_checks pooling) |
+| s4_financials | S4 (s4e) | LLM | D (integrated synthesis + scoreboard) |
 | s4_supply_chain | S4 | LLM | E |
-| s4_management | S4 | LLM | F |
+| s4_management | S4 | LLM | F (runs AFTER s4e — consumes the credibility scoreboard) |
 | s5_peers | S5 | LLM | G |
 | s5_risks | S5 | LLM | H |
 | s6_industry_macro | S6 | LLM | C |
@@ -39,6 +43,17 @@
 }
 ```
 
+### Statement-node extras (s4a/s4b/s4c only)
+
+Statement-forensic envelopes additionally carry two top-level keys:
+`claim_checks[]` ({mgmt_claim, evidence_id, computed_ref, verdict:
+corroborated|contradicted|unverifiable, note}) — every management claim
+touching the statement tested against computed numbers — and
+`followup_requests[]` (≤2 each, {target: computed|evidence, request,
+keywords}), answered once by s4d_followup. s4e (s4_financials) emits
+`risk_candidates_for_H` and `credibility_notes_for_F`; contradicted
+claims flow into H (risk candidates) and F (credibility) automatically.
+
 ### Block types
 
 ```json
@@ -58,7 +73,10 @@
    derive, sum, average, annualize, or convert units yourself.
 3. **Citation discipline:** every block carries `citations`; every claim
    in `claims[]` carries resolvable `evidence_ids`. A block with neither
-   is invalid output.
+   is invalid output. Citable forms: evidence uuid, `calc:<id>` (incl.
+   valuation_context sub-ids), `sec:<LETTER>.<block_id>`, `edge:<id>`,
+   `trail:<id>` — the last three are shown pre-labelled in context; cite
+   the id inside the brackets, never invent one.
 4. **Period/basis discipline:** every number is stated with its period
    (FY26 / Q3FY26 / TTM) and basis (consolidated/standalone) exactly as
    given in context.

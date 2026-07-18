@@ -1,97 +1,277 @@
 {
   "angelone.in": {
     "bad": 0,
-    "ok": 1
+    "ok": 6
   },
   "auto.economictimes.indiatimes.com": {
+    "bad": 0,
+    "ok": 2
+  },
+  "autocarpro.in": {
+    "bad": 0,
+    "ok": 2
+  },
+  "bankbazaar.com": {
     "bad": 0,
     "ok": 1
   },
   "bseindia.com": {
+    "bad": 4,
+    "ok": 127
+  },
+  "business-standard.com": {
+    "bad": 4,
+    "ok": 1
+  },
+  "c4scourses.in": {
     "bad": 0,
-    "ok": 22
+    "ok": 1
   },
   "cablecommunity.com": {
+    "bad": 0,
+    "ok": 6
+  },
+  "careratings.com": {
+    "bad": 2,
+    "ok": 0
+  },
+  "carlelo.com": {
     "bad": 0,
     "ok": 1
   },
   "casemine.com": {
     "bad": 0,
+    "ok": 3
+  },
+  "crisil.com": {
+    "bad": 1,
+    "ok": 0
+  },
+  "crisilratings.com": {
+    "bad": 2,
+    "ok": 0
+  },
+  "destinykey.org": {
+    "bad": 0,
     "ok": 1
+  },
+  "dhan.co": {
+    "bad": 0,
+    "ok": 1
+  },
+  "easemoney.in": {
+    "bad": 1,
+    "ok": 0
   },
   "economictimes.indiatimes.com": {
     "bad": 0,
-    "ok": 3
+    "ok": 21
   },
   "electronicsera.in": {
+    "bad": 0,
+    "ok": 3
+  },
+  "emergingmanufacturing.com": {
     "bad": 0,
     "ok": 1
   },
   "entrepreneurnewsnetwork.com": {
     "bad": 0,
+    "ok": 6
+  },
+  "equitybulls.com": {
+    "bad": 0,
+    "ok": 6
+  },
+  "finance.yahoo.com": {
+    "bad": 0,
     "ok": 1
   },
   "financialexpress.com": {
     "bad": 0,
-    "ok": 2
+    "ok": 10
   },
-  "indiankanoon.org": {
+  "forum.valuepickr.com": {
+    "bad": 0,
+    "ok": 4
+  },
+  "goldenpi.com": {
     "bad": 0,
     "ok": 1
   },
-  "ipfonline.com": {
+  "groww.in": {
+    "bad": 0,
+    "ok": 6
+  },
+  "in.investing.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "indianexpress.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "indiankanoon.org": {
+    "bad": 0,
+    "ok": 4
+  },
+  "indiaratings.co.in": {
     "bad": 1,
     "ok": 0
   },
+  "indiatoday.in": {
+    "bad": 0,
+    "ok": 3
+  },
+  "indmoney.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "instagram.com": {
+    "bad": 3,
+    "ok": 1
+  },
+  "ipfonline.com": {
+    "bad": 5,
+    "ok": 1
+  },
+  "livemint.com": {
+    "bad": 0,
+    "ok": 3
+  },
+  "mahindra.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "mmindia.co.in": {
+    "bad": 0,
+    "ok": 1
+  },
   "moneycontrol.com": {
     "bad": 1,
-    "ok": 0
+    "ok": 10
+  },
+  "mycarhelpline.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "ndtv.com": {
+    "bad": 0,
+    "ok": 1
   },
   "newprojectstracker.com": {
     "bad": 0,
     "ok": 1
   },
+  "news18.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "newsbytesapp.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "perplexity.ai": {
+    "bad": 0,
+    "ok": 1
+  },
+  "pestel-analysis.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "pmedrive.heavyindustries.gov.in": {
+    "bad": 0,
+    "ok": 1
+  },
+  "query1.finance.yahoo.com": {
+    "bad": 0,
+    "ok": 4
+  },
   "renewablemirror.com": {
     "bad": 0,
-    "ok": 2
+    "ok": 5
   },
   "sahi.com": {
     "bad": 0,
-    "ok": 3
+    "ok": 12
   },
   "scanx.trade": {
     "bad": 0,
-    "ok": 2
+    "ok": 10
   },
   "screener.in": {
     "bad": 0,
-    "ok": 23
+    "ok": 148
+  },
+  "siam.in": {
+    "bad": 0,
+    "ok": 1
+  },
+  "simplywall.st": {
+    "bad": 0,
+    "ok": 1
+  },
+  "smart-investing.in": {
+    "bad": 0,
+    "ok": 2
+  },
+  "sonacomstar.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "spinny.com": {
+    "bad": 0,
+    "ok": 1
+  },
+  "stockezee.com": {
+    "bad": 0,
+    "ok": 4
   },
   "theglobeandmail.com": {
+    "bad": 0,
+    "ok": 4
+  },
+  "thehindubusinessline.com": {
     "bad": 0,
     "ok": 1
   },
   "tickertape.in": {
     "bad": 0,
-    "ok": 1
+    "ok": 9
   },
   "tijorifinance.com": {
     "bad": 0,
-    "ok": 2
+    "ok": 9
+  },
+  "timesofindia.indiatimes.com": {
+    "bad": 0,
+    "ok": 3
   },
   "tipranks.com": {
+    "bad": 0,
+    "ok": 4
+  },
+  "tradebrains.in": {
+    "bad": 0,
+    "ok": 3
+  },
+  "tradingview.com": {
     "bad": 0,
     "ok": 1
   },
   "trendlyne.com": {
-    "bad": 1,
-    "ok": 7
+    "bad": 5,
+    "ok": 25
   },
   "valueresearchonline.com": {
     "bad": 0,
-    "ok": 2
+    "ok": 3
   },
   "whalesbook.com": {
+    "bad": 0,
+    "ok": 10
+  },
+  "wisesheets.io": {
     "bad": 0,
     "ok": 3
   },

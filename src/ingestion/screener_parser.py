@@ -129,7 +129,7 @@ def _parse_top_ratios(soup) -> list[dict]:
 
 def _parse_document_links(soup, base: str = "https://www.screener.in") -> dict:
     """Concall transcript + annual report links from the Documents section."""
-    links = {"concall_transcripts": [], "annual_reports": []}
+    links = {"concall_transcripts": [], "annual_reports": [], "concall_ppts": []}
     docs = soup.find("section", id="documents")
     if docs is None:
         return links
@@ -145,6 +145,14 @@ def _parse_document_links(soup, base: str = "https://www.screener.in") -> dict:
                 li = a.find_parent("li")
                 label = _cell_text(li).split("Transcript")[0].strip() if li else ""
                 links["concall_transcripts"].append({"url": href, "label": label})
+            elif "concalls" in classes and text.strip().lower() == "ppt":
+                # Phase 5.6: the quarterly investor deck (BSE-hosted) —
+                # replaces ddgs presentation hunting, which kept landing
+                # on aggregator list pages
+                li = a.find_parent("li")
+                label = _cell_text(li).split("Transcript")[0].split("Notes")[0] \
+                    .split("PPT")[0].strip() if li else ""
+                links["concall_ppts"].append({"url": href, "label": label})
             elif "annual-reports" in classes:
                 links["annual_reports"].append({"url": href, "label": text})
     return links
