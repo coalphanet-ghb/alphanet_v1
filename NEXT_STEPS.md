@@ -2,7 +2,136 @@
 
 ---
 
-# NEXT ERA — Pipeline Optimization toward Product (drafted 2026-07-18, owner-reviewed)
+# ARCHITECTURE PLAN — three-layer pipelines + Extraction 3.0 (owner-decided 2026-07-19)
+
+Supersedes the O-plan below (its items are absorbed into phases R0–R5;
+disposition at the end of this section). Direction unchanged: product
+for others; report envelope = the future UI's contract; verifier =
+product feature (full coverage stays); every change lands alone →
+live run → diff_golden → owner green-flag or rollback.
+
+## Target architecture
+
+**MACRO PIPELINE** (unchanged): macro-layer reads, freshness-stamped,
+rehydrated into stock runs.
+
+**SECTOR PIPELINE** (elevated to first-class; auto-refreshed INLINE by
+a stock run when its sector data is stale — one command still produces
+a report):
+- Sector registry: member stocks (= the peer set) + sector pack
+  (synthesis overlay — already exists) + NEW sector ingestion skill
+  doc (trusted sources, what to extract, how to analyse the sector).
+- Numeric backbone for ALL member stocks, stored per stock and
+  freshness-stamped: screener parse (zero-LLM), Yahoo closes, and
+  computed PE history (annual closes ÷ annual EPS — correct formula,
+  replaces wisesheets scraping entirely).
+- Sector trusted-source reads → sector evidence layer, date-tagged.
+
+**STOCK PIPELINE** (first-report generation; the update pipeline is a
+later era). Ingestion = **Extraction 3.0** — every extracted line kept
+VERBATIM with its evidence uuid (the citation spine is non-negotiable),
+SECTION-MAPPED at ingestion (cross-section duplication is by design)
+and DATE-TAGGED (e.g. AR release date). Storage (schema stays FROZEN —
+verified against live schema 2026-07-19, see DB_SCHEMA.md):
+- `evidence` has NO tags/section column — line-level attributes
+  (tags, and now section maps) live in the `extract:{doc_id}`
+  knowledge-entry JSON, exactly as tags do today, and are rehydrated
+  into the run-time pool on reuse.
+- Dates: `source_documents.published_date` exists — R3 must POPULATE
+  it per doc class (AR release, concall quarter, PPT date, news pub
+  date) and join it into the evidence pool; today it is often null.
+- Per-node telemetry (R0): `runs` is scalar-only (no jsonb) — the
+  per-node breakdown goes to local sidecar files
+  (data/telemetry/{run_id}.json); `runs` keeps the aggregates.
+- Sector membership (R2): `entity_relationships` with a new
+  relationship_type value `member_of` (stock → sector entity) — text
+  column, no schema change; sector trusted-source config + skill docs
+  live in the repo (git-versioned), not the DB.
+- Computed PE history stays DERIVED: raw closes + EPS are the stored
+  metric_observations; the PE series is computed at run time in s3
+  (no derived values in the observed-facts table).
+1. **Latest AR only** (FY-1 dropped — owner 2026-07-19; the latest
+   AR's prior-year comparatives + screener's 9y statements cover
+   trends): ONE /chat/completions conversation, **3–5 thematic query
+   bundles** (owner-picked), each with a FRESH 64K output budget —
+   structurally kills the big-AR output overflow; no splitter needed.
+   Terse-but-info-rich output demanded per bundle. The R0
+   prefix-caching probe decides the exact bundle count (input is
+   re-billed per query unless Fireworks discounts cached prefixes).
+2. **Concalls ×4**: PARALLEL per-call extraction (shared skill doc;
+   projections/guidance emphasized — feeds guidance tracking) + ONE
+   cheap trails-pass over the four extraction outputs →
+   guidance_evolution/recurring_themes (the batched call's
+   cross-quarter view must not be lost in the split).
+3. **Latest investor PPT**: one-shot, exhaustive — every
+   number/guidance/claim/projection, section-mapped.
+4. **Rating rationales (1–2)**: KEPT (owner green-flag) — unique
+   leverage/liquidity/concentration view for D2/F/H.
+5. **News batch**: as today (ddgs past-month, within the owner's ≤1y
+   cap); open-source news sources parked for a later phase.
+
+**DROPPED from stock ingestion** (owner 2026-07-19): FY-1 AR; results
+PDFs (screener #quarters covers — revisit in the update pipeline);
+separate shareholding read (screener parses the table incl. pledge);
+valuepickr; wisesheets valuation_history.
+
+**SYNTHESIS** (runs after all ingestion): per-section skills (specs) +
+sector-pack overlay — shape unchanged; context assembly moves from
+generic 40K doc-class walls to section-mapped evidence slices +
+per-node calc slices. s9 verifier full coverage (excerpt-deduped) →
+composer.
+
+## Implementation phases
+
+**R0 — Measure & probe** (no behavior change): per-call/per-node
+telemetry incl. spiral rate per node; verifier trend stats; Fireworks
+prefix-caching probe (repeated-prefix billing → sets AR bundle count);
+reasoning-effort/thinking-budget param probe.
+Gate: per-node cost table from one live run; probe verdicts written.
+
+**R1 — No-regret cuts under STABLE goldens** (each green-flagged):
+strip inputs[] from rendered calcs; verifier excerpt dedup;
+reasoning-brevity line; computed PE history replaces wisesheets (fixes
+the M&M percentile). Gate: diff_golden clean; cost drop measured.
+
+**R2 — Sector pipeline elevation**: registry formalized; numeric
+backbone moved to sector scope, stored per stock; inline auto-refresh
+with freshness TTL; sector ingestion skill docs (auto_ancillaries +
+auto_oem first). Gate: SONA stock run pulls its backbone from
+sector-stored data; M&M peer table intact; dry-run wiring clean.
+
+**R3 — Extraction 3.0** (the big rebuild; goldens RE-FROZEN after):
+AR conversation extraction (bundles, section-mapped, date-tagged);
+concalls parallel + trails-pass; PPT one-shot; the source drops
+applied; extraction skill docs focus-hashed → auto re-read on change
+(absorbs old focus-versioning). Gate: SONA + M&M full runs; M&M AR
+ingested zero skips; citations ≥98%; goldens re-frozen as the new
+baseline.
+
+**R4 — Synthesis adaptation & slimming** (each cut vs the NEW goldens):
+assemblers consume section-mapped evidence (the 40K walls collapse);
+per-node calc slicing; F guidance-feed consolidation (six encodings →
+scorecard + trails); J on summaries (selective full-D+H if quality
+drops); C edge-cap audit; s4d_followup keep/simplify/remove per
+evidence; TMPV non-comparability spec note; spiral-rate before/after
+(the low-structure-context hypothesis test).
+Gate: toward ~$0.5–0.7/run; goldens hold; spiral trend down.
+
+**R5 — Product bridge** (next era entry): envelope JSON-schema
+contract validated at compose time; per-run report manifest
+(cost/citations/verifier stats); parked: open-source news ingestion,
+update pipeline, UI rendering, NBFC pack.
+
+## O-plan disposition (absorbed 2026-07-19)
+
+O0→R0 · O1a→R1 · O1b/c/d/e→R4 · O2-wisesheets→R1 · O2-verifier-dedup→R1
+· O2-spiral-levers→R0/R1/R4 · O2-s4d/news-audits→R4 · O3a/O3b
+(AR-focus rewrite / splitter)→SUPERSEDED by R3's bundle design ·
+O3-focus-versioning→R3 · O4→R5.
+
+---
+
+# [ABSORBED 2026-07-19 into the ARCHITECTURE PLAN above — kept for its per-item detail] NEXT ERA — Pipeline Optimization toward Product (drafted 2026-07-18, owner-reviewed)
 
 **Direction (owner-set):** AlphaNet is heading toward a product for
 others. This phase makes the pipeline lean, measured, and reliable.

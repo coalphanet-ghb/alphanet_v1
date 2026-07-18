@@ -33,7 +33,13 @@
    `src/llm.py` (providers, usage telemetry, truncation handling),
    `src/ingestion/fetcher.py` (fetch + validators),
    `src/ingestion/screener_parser.py`, `scripts/diff_golden.py`.
-5. **NEXT_STEPS.md** — current state, watch-lines, the prioritized backlog.
+5. **NEXT_STEPS.md** — current state, watch-lines, the prioritized
+   backlog. Its top "ARCHITECTURE PLAN" section (2026-07-19) is the
+   LIVE plan and supersedes §8 below.
+5b. **DB_SCHEMA.md** — the frozen Supabase schema + persistence
+   invariants (citation integrity, append-only facts, where the
+   architecture plan touches storage). Read before touching db.py or
+   anything that persists.
 6. **HANDOFF2.md / HANDOFF.md** — historical context only. Their plans
    are fully executed; their principles (§6 best practices in HANDOFF2,
    anti-hallucination in HANDOFF) still hold and are extended by §7 below.
