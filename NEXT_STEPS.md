@@ -1,5 +1,99 @@
 # ALL SIX PHASES COMPLETE (2026-07-18). Golden set frozen.
 
+---
+
+# NEXT ERA — Pipeline Optimization toward Product (drafted 2026-07-18, owner-reviewed)
+
+**Direction (owner-set):** AlphaNet is heading toward a product for
+others. This phase makes the pipeline lean, measured, and reliable.
+The report envelope (typed blocks in `sections_json`) is the contract a
+future UI will render — treat it as the API. Cost optimization matters,
+but flow/functionality first. The s9 verifier is a PRODUCT FEATURE
+(trust story) — full coverage stays; optimize only its efficiency.
+Graph parallelization is OFF the table for now (sections deliberately
+feed each other in a fixed flow); revisit only as a last step.
+
+**Working discipline for every change in this era:** plan the cut →
+implement it ALONE → dry-run → live run → `diff_golden` → **owner
+green-flags or it rolls back**. One change in flight at a time.
+
+## O0. Per-node telemetry (the measuring stick — do FIRST)
+
+Attribute every LLM call in `src/llm.py` to its node id; persist
+per-run, per-node tokens/cost/latency (runs table or JSON sidecar) and
+print a per-node cost table at end of run. Fold in verifier trend
+tracking (old backlog #5): persist per-run verifier stats so the 6–16%
+not-fully-supported noise becomes a monitorable trend.
+**Gate:** one live run prints the per-node cost/latency table; every
+later cut in this era is justified by this data, not guesswork.
+
+## O1. Context-duplication cuts (biggest expected cost win)
+
+- `_computed(state)` currently dumps the ENTIRE computed-financials
+  blob into ~8 prompts (B, D1, D2, D3, D, E, F, C — s4_synth.py). Slice
+  per node: P&L calcs to D1, BS to D2, CF to D3, small relevant subsets
+  to B/E/C. Zero quality risk expected; verify with diff_golden anyway.
+- J's full-envelope feed (up to 100K chars/section): measure cost via
+  O0, trim to summaries if J's quality holds on diff.
+- Audit the 40K evidence budgets: count which evidence classes each
+  golden section actually CITES; shrink feeds nobody cites.
+
+## O2. Remove fragile / low-value machinery (audit, then cut)
+
+- **Retire valuation_history scraping** (wisesheets — Macy's incident,
+  connection resets): compute the annual PE series from Yahoo yearly
+  closes ÷ annual EPS (both already in hand). Fixes the M&M percentile
+  gap (old #3) AND deletes the fragile source + its validators.
+  **Gate:** M&M percentile renders from the computed series.
+- **Audit s4d_followup:** count how many follow-up answers materially
+  surface in golden D sections. Keep/simplify/remove per evidence.
+- **Audit the news budget** (10 URLs): count news citations in goldens;
+  reduce if low-value.
+- **Reasoning-spiral mitigation:** reasoning-brevity instruction in the
+  spec preamble; measure spiral frequency via O0 (each spiral+retry
+  burns a full 64K output budget — pure waste).
+
+## O3. Reliability — "any company just works" (reshaped old #1/#2)
+
+A product cannot skip a company's main annual report or require the
+operator to remember `--reingest`.
+- **Large-AR split extraction** (old #1): docs >~600K chars split into
+  two calls (statements+notes / MD&A+prose), merged.
+  **Gate:** M&M FY-1 AR ingested, zero skips.
+- **Extraction-focus versioning** (old #2): focus-hash stamped on
+  stored extractions; auto re-read on mismatch.
+  **Gate:** change a focus, watch only affected docs re-read.
+- **TMPV non-comparability note** in G's spec (old #4, shrunk to a spec
+  note; TMCV peer edge dropped unless CV comparison is wanted later).
+
+## O4. Report-contract hardening (the bridge to the UI phase)
+
+- Freeze the envelope/block-type contract as a versioned JSON Schema,
+  validated at compose time — this becomes the UI renderer's API
+  (today it's prose in nodes/README.md).
+- Verify `sections_json` + citations + per-claim verifier verdicts are
+  complete enough to render a report without re-parsing markdown.
+- Per-run report manifest (cost, citations resolved, verifier stats)
+  for a future product dashboard.
+
+## Old backlog disposition (owner-reviewed 2026-07-18)
+
+| Old item | Disposition |
+|---|---|
+| #1 Large-AR split | KEEP → O3 (reliability, not optimization) |
+| #2 Focus versioning | KEEP → O3 |
+| #3 M&M valuation source | MODIFY → O2: compute PE internally, retire scraping |
+| #4 TMPV note / TMCV edge | SHRINK → O3: spec note only; TMCV edge dropped |
+| #5 Verifier trend tracking | MERGE → O0 telemetry |
+| #6 Sprint-6 era (update workflow, sectors, UI) | NEXT PHASE — starts from the lean, contract-hardened base this era produces |
+
+**Sequencing logic:** O0 measures → O1/O2 cut with per-change owner
+green-flags → O3 makes any-company reliable → O4 freezes the contract
+the UI phase will build on. Parallelization only after all of that, if
+ever.
+
+---
+
 ## Phase 6 results
 
 - **SONA `--reingest`** (v18, golden): all docs fresh under current
