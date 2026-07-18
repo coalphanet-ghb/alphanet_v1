@@ -29,14 +29,34 @@ later cut in this era is justified by this data, not guesswork.
 
 ## O1. Context-duplication cuts (biggest expected cost win)
 
-- `_computed(state)` currently dumps the ENTIRE computed-financials
-  blob into ~8 prompts (B, D1, D2, D3, D, E, F, C — s4_synth.py). Slice
-  per node: P&L calcs to D1, BS to D2, CF to D3, small relevant subsets
-  to B/E/C. Zero quality risk expected; verify with diff_golden anyway.
-- J's full-envelope feed (up to 100K chars/section): measure cost via
-  O0, trim to summaries if J's quality holds on diff.
+Baseline telemetry (prior session): ~380K input / 300–500K OUTPUT
+tokens per run — output (which includes reasoning tokens) is at least
+half the bill, so output-side cuts (O2 spiral work, O3 AR focus) weigh
+as much as input dedup.
+
+Ranked by effort-to-savings (verified against s4_synth.py):
+- **O1a. Strip `inputs` arrays from rendered calc context** (keep in
+  state/DB — lineage is persistence, not prompting). Every computed
+  value carries observation-uuid lists (pe_1y_path alone carries
+  dozens); models cite calc:<id>, never those uuids; the blob ships to
+  ~8 prompts. One-line change in `_computed`'s rendering, zero quality
+  risk, likely 30–50% of the computed blob × 8.
+- **O1b. Slice `_computed` per node**: P&L calcs to D1, BS+battery to
+  D2, CF to D3, small vitals subset to B/E/C; FULL blob only to s4e.
+  Calc ids are already statement-prefixed — mechanical.
+- **O1c. J back to summaries** (~10–15K/section instead of full
+  envelopes at 100K). If diff_golden shows J degrading, go selective
+  (full D+H, summaries elsewhere) — not full-everything.
+- **O1d. Consolidate F's guidance feeds**: F currently receives SIX
+  overlapping encodings (scorecard, claim-checks, open items, trails,
+  themes, 40K raw concall). Load-bearing two = computed scorecard +
+  labeled trails; open items largely duplicate trails; shrink the raw
+  concall wall to guidance-tagged passages (tags exist from s2).
+- **O1e. C's edge cap**: c_node renders up to 200 edges × ~350 chars
+  (~70K) — audit how many golden C actually cites; cap accordingly.
 - Audit the 40K evidence budgets: count which evidence classes each
-  golden section actually CITES; shrink feeds nobody cites.
+  golden section actually CITES; shrink feeds nobody cites. KEEP H and
+  C breadth (risk register + sensitivities demonstrably use it).
 
 ## O2. Remove fragile / low-value machinery (audit, then cut)
 
@@ -45,20 +65,42 @@ later cut in this era is justified by this data, not guesswork.
   closes ÷ annual EPS (both already in hand). Fixes the M&M percentile
   gap (old #3) AND deletes the fragile source + its validators.
   **Gate:** M&M percentile renders from the computed series.
+- **Verifier excerpt dedup** (coverage UNTOUCHED — efficiency only):
+  claims cluster on the same passages, and s9 re-renders each 1200-char
+  excerpt per claim within a batch. Render unique excerpts once with an
+  index; claims reference indices. Roughly halves verifier input.
 - **Audit s4d_followup:** count how many follow-up answers materially
   surface in golden D sections. Keep/simplify/remove per evidence.
 - **Audit the news budget** (10 URLs): count news citations in goldens;
   reduce if low-value.
-- **Reasoning-spiral mitigation:** reasoning-brevity instruction in the
-  spec preamble; measure spiral frequency via O0 (each spiral+retry
-  burns a full 64K output budget — pure waste).
+- **Reasoning-spiral mitigation:** (a) reasoning-brevity line in the
+  ENVELOPE_CONTRACT preamble; (b) ONE-call probe of whether Fireworks'
+  M3 endpoint accepts a reasoning-effort/thinking-budget param (never
+  tried); (c) working hypothesis — spirals correlate with large
+  low-structure contexts (frequency rose when Phase-5's 40K walls
+  landed), so O1's cuts are plausibly also the spiral fix; O0 tracks
+  spiral rate per node before/after to prove or kill it. Each
+  spiral+retry burns a full 64K output budget (~$0.15–0.30/run).
 
 ## O3. Reliability — "any company just works" (reshaped old #1/#2)
 
 A product cannot skip a company's main annual report or require the
 operator to remember `--reingest`.
-- **Large-AR split extraction** (old #1): docs >~600K chars split into
-  two calls (statements+notes / MD&A+prose), merged.
+- **O3a FIRST — AR-focus rewrite (prompt edit, try BEFORE building the
+  splitter)**: screener already supplies 9y of standard P&L/BS/CF
+  deterministically at higher dedup authority (s3 `_obs_priority` —
+  AR-extracted standard cells lose the dedup anyway). Add an explicit
+  "SKIP standard statement line-items (supplied elsewhere); extract
+  only what screener lacks — segment/geography/customer/RM tables,
+  notes, disclosures" to the annual_report _FOCUS (and review
+  results_pdf's "every line item" focus vs screener #quarters the same
+  way). If M&M's FY-1 AR then fits in 64K output, the splitter is
+  unnecessary. NUANCE: the current AR focus targets mostly disclosures
+  already — the skip-list's value is stopping the model from ALSO
+  dumping the statements it finds salient; measure via O0.
+- **O3b. Large-AR split extraction** (old #1) — ONLY if O3a is
+  insufficient: docs >~600K chars split into two calls
+  (statements+notes / MD&A+prose), merged.
   **Gate:** M&M FY-1 AR ingested, zero skips.
 - **Extraction-focus versioning** (old #2): focus-hash stamped on
   stored extractions; auto re-read on mismatch.
