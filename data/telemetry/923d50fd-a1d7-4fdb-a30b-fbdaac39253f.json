@@ -1,0 +1,226 @@
+{
+ "run_id": "923d50fd-a1d7-4fdb-a30b-fbdaac39253f",
+ "nodes": {
+  "s2:investor_presentation": {
+   "calls": 1,
+   "in": 955,
+   "out": 140,
+   "cached_in": 0,
+   "latency_s": 2.9029584000236355,
+   "cost_usd": 0.0,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:annual_report": {
+   "calls": 5,
+   "in": 1431863,
+   "out": 42253,
+   "cached_in": 1145088,
+   "latency_s": 227.17556849995162,
+   "cost_usd": 0.8800587200000001,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_May 2026": {
+   "calls": 1,
+   "in": 13953,
+   "out": 8172,
+   "cached_in": 0,
+   "latency_s": 26.429548499989323,
+   "cost_usd": 0.025570830000000003,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_Jan 2026": {
+   "calls": 1,
+   "in": 15911,
+   "out": 6197,
+   "cached_in": 0,
+   "latency_s": 21.038056800025515,
+   "cost_usd": 0.022322480000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_Oct 2025": {
+   "calls": 1,
+   "in": 16303,
+   "out": 7842,
+   "cached_in": 0,
+   "latency_s": 39.85385959997075,
+   "cost_usd": 0.02614063,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_Aug 2025": {
+   "calls": 1,
+   "in": 12583,
+   "out": 5859,
+   "cached_in": 0,
+   "latency_s": 18.52497999998741,
+   "cost_usd": 0.01975186,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:rating_rationale": {
+   "calls": 1,
+   "in": 4139,
+   "out": 8392,
+   "cached_in": 169,
+   "latency_s": 27.716840100008994,
+   "cost_usd": 0.020654930000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:rating_rationale_2": {
+   "calls": 1,
+   "in": 1236,
+   "out": 1853,
+   "cached_in": 0,
+   "latency_s": 7.2556285000173375,
+   "cost_usd": 0.00473787,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_0": {
+   "calls": 1,
+   "in": 5135,
+   "out": 4620,
+   "cached_in": 0,
+   "latency_s": 14.826493600034155,
+   "cost_usd": 0.01294205,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:litigation": {
+   "calls": 1,
+   "in": 2698,
+   "out": 3395,
+   "cached_in": 0,
+   "latency_s": 12.870991899981163,
+   "cost_usd": 0.00891895,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_trails": {
+   "calls": 1,
+   "in": 5816,
+   "out": 5369,
+   "cached_in": 0,
+   "latency_s": 19.594357000023592,
+   "cost_usd": 0.01495691,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D1": {
+   "calls": 1,
+   "in": 24954,
+   "out": 13038,
+   "cached_in": 0,
+   "latency_s": 53.60074359999271,
+   "cost_usd": 0.04227792,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_B": {
+   "calls": 1,
+   "in": 12152,
+   "out": 14039,
+   "cached_in": 0,
+   "latency_s": 59.05301189998863,
+   "cost_usd": 0.03742901,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D3": {
+   "calls": 1,
+   "in": 25196,
+   "out": 7319,
+   "cached_in": 0,
+   "latency_s": 31.72968409996247,
+   "cost_usd": 0.02988641,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D2": {
+   "calls": 1,
+   "in": 26405,
+   "out": 10048,
+   "cached_in": 0,
+   "latency_s": 44.96022619999712,
+   "cost_usd": 0.036527870000000004,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_E": {
+   "calls": 1,
+   "in": 15765,
+   "out": 9241,
+   "cached_in": 0,
+   "latency_s": 44.593927500012796,
+   "cost_usd": 0.02890854,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s4d_followup": {
+   "calls": 1,
+   "in": 1398,
+   "out": 324,
+   "cached_in": 0,
+   "latency_s": 2.6998253000201657,
+   "cost_usd": 0.00147846,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D": {
+   "calls": 1,
+   "in": 18147,
+   "out": 10223,
+   "cached_in": 0,
+   "latency_s": 41.97536849998869,
+   "cost_usd": 0.032369220000000004,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_F": {
+   "calls": 1,
+   "in": 36726,
+   "out": 11948,
+   "cached_in": 0,
+   "latency_s": 53.46221680002054,
+   "cost_usd": 0.04636542,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_G": {
+   "calls": 1,
+   "in": 10599,
+   "out": 6782,
+   "cached_in": 0,
+   "latency_s": 30.84211799997138,
+   "cost_usd": 0.02068203,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_H": {
+   "calls": 2,
+   "in": 36274,
+   "out": 20173,
+   "cached_in": 18136,
+   "latency_s": 103.55614290002268,
+   "cost_usd": 0.06412957,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_C": {
+   "calls": 1,
+   "in": 31028,
+   "out": 16358,
+   "cached_in": 0,
+   "latency_s": 104.24106420000317,
+   "cost_usd": 0.05288942,
+   "spirals": 0,
+   "truncations": 0
+  }
+ },
+ "extra": {}
+}

@@ -1,0 +1,219 @@
+{
+ "run_id": "13b60106-2cfe-443d-a1d2-a030d2983b35",
+ "nodes": {
+  "s2:investor_presentation": {
+   "calls": 1,
+   "in": 7501,
+   "out": 14230,
+   "cached_in": 0,
+   "latency_s": 60.71329029998742,
+   "cost_usd": 0.03528925,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:rating_rationale_2": {
+   "calls": 1,
+   "in": 1172,
+   "out": 1008,
+   "cached_in": 0,
+   "latency_s": 4.446022499992978,
+   "cost_usd": 0.00285212,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_0": {
+   "calls": 1,
+   "in": 3931,
+   "out": 2460,
+   "cached_in": 0,
+   "latency_s": 13.014525199949276,
+   "cost_usd": 0.00754945,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_1": {
+   "calls": 1,
+   "in": 5743,
+   "out": 4831,
+   "cached_in": 0,
+   "latency_s": 21.80269889999181,
+   "cost_usd": 0.013738539999999999,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_2": {
+   "calls": 1,
+   "in": 867,
+   "out": 98,
+   "cached_in": 0,
+   "latency_s": 1.8922966999816708,
+   "cost_usd": 0.0,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:litigation": {
+   "calls": 1,
+   "in": 37803,
+   "out": 4611,
+   "cached_in": 114,
+   "latency_s": 58.36517560004722,
+   "cost_usd": 0.030889740000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_B": {
+   "calls": 1,
+   "in": 12370,
+   "out": 7506,
+   "cached_in": 0,
+   "latency_s": 33.40953190001892,
+   "cost_usd": 0.02324164,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D3": {
+   "calls": 1,
+   "in": 24677,
+   "out": 20015,
+   "cached_in": 0,
+   "latency_s": 77.93064829998184,
+   "cost_usd": 0.057405199999999997,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D1": {
+   "calls": 1,
+   "in": 24839,
+   "out": 11290,
+   "cached_in": 0,
+   "latency_s": 51.01897909998661,
+   "cost_usd": 0.038386550000000005,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_E": {
+   "calls": 1,
+   "in": 16679,
+   "out": 12408,
+   "cached_in": 0,
+   "latency_s": 45.82226929999888,
+   "cost_usd": 0.03634697,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D2": {
+   "calls": 1,
+   "in": 25890,
+   "out": 9629,
+   "cached_in": 0,
+   "latency_s": 44.78435710002668,
+   "cost_usd": 0.03532701,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s4d_followup": {
+   "calls": 1,
+   "in": 2187,
+   "out": 1170,
+   "cached_in": 0,
+   "latency_s": 6.627311800024472,
+   "cost_usd": 0.0037651499999999997,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D": {
+   "calls": 1,
+   "in": 18149,
+   "out": 31068,
+   "cached_in": 0,
+   "latency_s": 120.80815050000092,
+   "cost_usd": 0.07802086999999999,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_F": {
+   "calls": 1,
+   "in": 36335,
+   "out": 27901,
+   "cached_in": 0,
+   "latency_s": 114.75924280000618,
+   "cost_usd": 0.08108744,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_G": {
+   "calls": 1,
+   "in": 9129,
+   "out": 6877,
+   "cached_in": 0,
+   "latency_s": 40.549303099978715,
+   "cost_usd": 0.02008158,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_H": {
+   "calls": 1,
+   "in": 19623,
+   "out": 11128,
+   "cached_in": 0,
+   "latency_s": 61.27688749996014,
+   "cost_usd": 0.03516297,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_C": {
+   "calls": 1,
+   "in": 30472,
+   "out": 20737,
+   "cached_in": 0,
+   "latency_s": 104.10627310001291,
+   "cost_usd": 0.06217363000000001,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_I": {
+   "calls": 1,
+   "in": 14167,
+   "out": 15245,
+   "cached_in": 0,
+   "latency_s": 71.1852200999856,
+   "cost_usd": 0.0411784,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_J": {
+   "calls": 1,
+   "in": 21300,
+   "out": 6772,
+   "cached_in": 0,
+   "latency_s": 28.176754700019956,
+   "cost_usd": 0.02654568,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s9_verifier": {
+   "calls": 10,
+   "in": 32668,
+   "out": 25848,
+   "cached_in": 226,
+   "latency_s": 102.56992139987415,
+   "cost_usd": 0.07457452,
+   "spirals": 0,
+   "truncations": 0
+  }
+ },
+ "extra": {
+  "verifier": {
+   "claims_checked": 200,
+   "not_fully_supported": 42,
+   "by_verdict": {
+    "supported": 158,
+    "partial": 25,
+    "unsupported": 14,
+    "contradicted": 3
+   },
+   "batches": 10,
+   "tasks_total": 209
+  }
+ }
+}

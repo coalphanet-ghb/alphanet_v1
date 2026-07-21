@@ -60,6 +60,10 @@ def main():
                         help="ignore stored extractions and re-read every "
                              "company document (use after extraction-prompt "
                              "or model upgrades; costs a full read budget)")
+    parser.add_argument("--refresh-sector", action="store_true",
+                        help="force the sector numeric backbone (screener + "
+                             "price series for all member stocks) to refresh "
+                             "even if within its freshness window (zero LLM)")
     args = parser.parse_args()
 
     if args.mode == "high":
@@ -98,6 +102,7 @@ def main():
         "dry_run": args.dry_run,
         "persist": persist,
         "reingest": args.reingest,
+        "refresh_sector": args.refresh_sector,
         "run_id": run_id,
         "profile": dict(company),
         "pack": {},
@@ -117,6 +122,13 @@ def main():
             except Exception as e:
                 print(f"  [warn] could not mark run failed in DB "
                       f"(network down?): {e}")
+        try:
+            # partial telemetry is most valuable exactly on aborts
+            # (which node was mid-flight, spiral counts so far)
+            import src.llm as llm
+            llm.dump_telemetry(run_id)
+        except Exception:
+            pass
 
     from src.llm import ModelOverloadedError, LLMError, calls_made
     app = build_graph()
@@ -143,14 +155,17 @@ def main():
                            f"Everything already ingested is reused for free.\n")
         raise
 
+    import src.llm as llm
     if persist:
         from src import db
-        import src.llm as llm
         ti, to, cost = llm.run_cost_usd()
         db.finish_run(run_id, "success", model_used=get_active_model(),
                       tokens_input=ti, tokens_output=to, cost_usd=cost)
         print(f"\nLLM calls this run: {llm.calls_made} "
               f"({ti:,} in / {to:,} out tokens, ~${cost:.2f} paid)")
+    # Round 1: per-node cost table + data/telemetry/{run_id}.json sidecar
+    # (the runs table stays scalar-only per DB_SCHEMA.md)
+    llm.dump_telemetry(run_id)
 
     print(f"\nDone. Report: {result['report_path']}")
 

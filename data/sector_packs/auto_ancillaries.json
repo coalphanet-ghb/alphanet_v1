@@ -1,55 +1,218 @@
 {
   "pack_id": "auto_ancillaries",
   "label": "Auto Ancillaries / Components",
-  "sub_sectors": ["auto ancillaries/components", "tyres", "batteries (lead-acid + Li-ion)"],
+  "sub_sectors": [
+    "auto ancillaries/components",
+    "tyres",
+    "batteries (lead-acid + Li-ion)"
+  ],
   "version": 1,
-
   "snapshot_vitals": [
-    {"metric_id": "revenue_growth_vs_oem", "label": "Revenue growth vs OEM production growth", "unit": "ratio", "calc": "sector_kpis.growth_vs_underlying"},
-    {"metric_id": "ebitda_margin_ttm", "label": "EBITDA margin (TTM)", "unit": "percent", "calc": "margins.ebitda_margin_ttm"},
-    {"metric_id": "order_book", "label": "Order book / net new wins", "unit": "inr_crore", "calc": "sector_kpis.order_book"},
-    {"metric_id": "export_share", "label": "Export share of revenue", "unit": "percent", "calc": "sector_kpis.export_share"},
-    {"metric_id": "top_customer_share", "label": "Top customer % of revenue", "unit": "percent", "calc": "sector_kpis.customer_concentration"},
-    {"metric_id": "roce", "label": "ROCE", "unit": "percent", "calc": "returns.roce"},
-    {"metric_id": "net_debt_ebitda", "label": "Net debt / EBITDA", "unit": "x", "calc": "leverage.net_debt_ebitda"},
-    {"metric_id": "ev_revenue_share", "label": "EV-linked revenue %", "unit": "percent", "calc": "sector_kpis.ev_revenue_share"}
+    {
+      "metric_id": "revenue_growth_vs_oem",
+      "label": "Revenue growth vs OEM production growth",
+      "unit": "ratio",
+      "calc": "sector_kpis.growth_vs_underlying"
+    },
+    {
+      "metric_id": "ebitda_margin_ttm",
+      "label": "EBITDA margin (TTM)",
+      "unit": "percent",
+      "calc": "margins.ebitda_margin_ttm"
+    },
+    {
+      "metric_id": "order_book",
+      "label": "Order book / net new wins",
+      "unit": "inr_crore",
+      "calc": "sector_kpis.order_book"
+    },
+    {
+      "metric_id": "export_share",
+      "label": "Export share of revenue",
+      "unit": "percent",
+      "calc": "sector_kpis.export_share"
+    },
+    {
+      "metric_id": "top_customer_share",
+      "label": "Top customer % of revenue",
+      "unit": "percent",
+      "calc": "sector_kpis.customer_concentration"
+    },
+    {
+      "metric_id": "roce",
+      "label": "ROCE",
+      "unit": "percent",
+      "calc": "returns.roce"
+    },
+    {
+      "metric_id": "net_debt_ebitda",
+      "label": "Net debt / EBITDA",
+      "unit": "x",
+      "calc": "leverage.net_debt_ebitda"
+    },
+    {
+      "metric_id": "ev_revenue_share",
+      "label": "EV-linked revenue %",
+      "unit": "percent",
+      "calc": "sector_kpis.ev_revenue_share"
+    }
   ],
-
-  "macro_commodity_subset": ["Steel", "Specialty Alloys", "Copper", "Rare Earth Magnets", "INR/USD Exchange Rate"],
-
+  "macro_commodity_subset": [
+    "Steel",
+    "Specialty Alloys",
+    "Copper",
+    "Rare Earth Magnets",
+    "INR/USD Exchange Rate"
+  ],
   "sector_queries": [
-    {"q": "acma auto component industry performance latest", "blocks": ["C", "G"], "results": 3},
-    {"q": "auto component exports india latest data", "blocks": ["C"], "results": 3},
-    {"q": "india auto ancillary outlook {fy} icra OR crisil", "blocks": ["C", "H"], "results": 5},
-    {"q": "siam monthly auto production data latest", "blocks": ["C"], "results": 3},
-    {"q": "oem ev platform sourcing india suppliers", "blocks": ["C", "F"], "results": 3},
-    {"q": "rare earth magnet supply china export india auto", "blocks": ["C", "E", "H"], "results": 3},
-    {"q": "auto components pli beneficiaries update", "blocks": ["C"], "results": 3},
-    {"q": "us eu tariff auto parts india impact", "blocks": ["C", "H"], "results": 3}
+    {
+      "q": "acma auto component industry performance latest",
+      "blocks": [
+        "C",
+        "G"
+      ],
+      "results": 3
+    },
+    {
+      "q": "auto component exports india latest data",
+      "blocks": [
+        "C"
+      ],
+      "results": 3
+    },
+    {
+      "q": "india auto ancillary outlook {fy} icra OR crisil",
+      "blocks": [
+        "C",
+        "H"
+      ],
+      "results": 5
+    },
+    {
+      "q": "siam monthly auto production data latest",
+      "blocks": [
+        "C"
+      ],
+      "results": 3
+    },
+    {
+      "q": "oem ev platform sourcing india suppliers",
+      "blocks": [
+        "C",
+        "F"
+      ],
+      "results": 3
+    },
+    {
+      "q": "rare earth magnet supply china export india auto",
+      "blocks": [
+        "C",
+        "E",
+        "H"
+      ],
+      "results": 3
+    },
+    {
+      "q": "auto components pli beneficiaries update",
+      "blocks": [
+        "C"
+      ],
+      "results": 3
+    },
+    {
+      "q": "us eu tariff auto parts india impact",
+      "blocks": [
+        "C",
+        "H"
+      ],
+      "results": 3
+    }
   ],
-
   "compute": {
     "skip_modules": [],
     "sector_kpis": [
-      {"formula_id": "growth_vs_underlying", "label": "Revenue growth / OEM production growth", "inputs": ["company revenue growth", "SIAM production growth"], "norm_healthy": "1.5-2x market = content/share story", "norm_warning": "~1x = no story; <1x = losing content or share"},
-      {"formula_id": "order_book", "label": "Order book (note counting convention)", "inputs": ["disclosed order book/net new wins"], "norm_healthy": "growing with disclosed conversion", "norm_warning": "counting convention changed, or book grows while revenue doesn't convert"},
-      {"formula_id": "export_share", "label": "Export % + destination mix", "inputs": ["segment/geography disclosure"], "norm_healthy": "diversified destinations", "norm_warning": "single-region concentration + tariff exposure"},
-      {"formula_id": "customer_concentration", "label": "Top-1/top-5 customer share", "inputs": ["AR customer disclosure"], "norm_healthy": "<20% top customer", "norm_warning": ">30% single customer"},
-      {"formula_id": "ev_revenue_share", "label": "EV-linked revenue % (and taxonomy split)", "inputs": ["company disclosure"], "norm_healthy": "rising, with obsolete-bucket shrinking", "norm_warning": "high obsolete-in-BEV share with no transition plan"},
-      {"formula_id": "aftermarket_share", "label": "Aftermarket % of revenue", "inputs": ["segment disclosure"], "norm_healthy": "higher = margin + counter-cyclical cushion", "norm_warning": ""},
-      {"formula_id": "program_cycle_roce", "label": "Incremental ROCE across capex programs (rolling 3y)", "inputs": ["delta EBIT", "delta capital employed"], "norm_healthy": "clears ~12-13% after ramp", "norm_warning": "serially below hurdle after ramp completes"}
+      {
+        "formula_id": "growth_vs_underlying",
+        "label": "Revenue growth / OEM production growth",
+        "inputs": [
+          "company revenue growth",
+          "SIAM production growth"
+        ],
+        "norm_healthy": "1.5-2x market = content/share story",
+        "norm_warning": "~1x = no story; <1x = losing content or share"
+      },
+      {
+        "formula_id": "order_book",
+        "label": "Order book (note counting convention)",
+        "inputs": [
+          "disclosed order book/net new wins"
+        ],
+        "norm_healthy": "growing with disclosed conversion",
+        "norm_warning": "counting convention changed, or book grows while revenue doesn't convert"
+      },
+      {
+        "formula_id": "export_share",
+        "label": "Export % + destination mix",
+        "inputs": [
+          "segment/geography disclosure"
+        ],
+        "norm_healthy": "diversified destinations",
+        "norm_warning": "single-region concentration + tariff exposure"
+      },
+      {
+        "formula_id": "customer_concentration",
+        "label": "Top-1/top-5 customer share",
+        "inputs": [
+          "AR customer disclosure"
+        ],
+        "norm_healthy": "<20% top customer",
+        "norm_warning": ">30% single customer"
+      },
+      {
+        "formula_id": "ev_revenue_share",
+        "label": "EV-linked revenue % (and taxonomy split)",
+        "inputs": [
+          "company disclosure"
+        ],
+        "norm_healthy": "rising, with obsolete-bucket shrinking",
+        "norm_warning": "high obsolete-in-BEV share with no transition plan"
+      },
+      {
+        "formula_id": "aftermarket_share",
+        "label": "Aftermarket % of revenue",
+        "inputs": [
+          "segment disclosure"
+        ],
+        "norm_healthy": "higher = margin + counter-cyclical cushion",
+        "norm_warning": ""
+      },
+      {
+        "formula_id": "program_cycle_roce",
+        "label": "Incremental ROCE across capex programs (rolling 3y)",
+        "inputs": [
+          "delta EBIT",
+          "delta capital employed"
+        ],
+        "norm_healthy": "clears ~12-13% after ramp",
+        "norm_warning": "serially below hurdle after ramp completes"
+      }
     ]
   },
-
-  "peer_table_columns": ["growth_vs_underlying", "ebitda_margin_ttm", "export_share", "ev_revenue_share", "top_customer_share"],
-
+  "peer_table_columns": [
+    "growth_vs_underlying",
+    "ebitda_margin_ttm",
+    "export_share",
+    "ev_revenue_share",
+    "top_customer_share"
+  ],
   "valuation": {
     "primary_multiple": "P/E",
-    "secondary": ["EV/EBITDA"],
+    "secondary": [
+      "EV/EBITDA"
+    ],
     "cyclical": false,
     "conventions": "Peer by PRODUCT overlap, not the 'auto ancillary' label (forging vs wiring-harness is not a comparison). Technology/EV-content names carry a structural premium - quantify it against the content-growth differential rather than accepting or rejecting it. Global peers (Bosch, Aptiv, Schaeffler AG) are context for where multiples can go, never Indian comps."
   },
-
   "overlays": {
     "business_model": "Sector model: volume taker on OEM platforms + content-per-vehicle (CPV) growth + aftermarket annuity. Being spec'd on a platform = 5-7 year revenue visibility; the win happens 12-18 months before revenue. Revenue quality ladder: aftermarket (annuity-like) > platform-backed OEM supply (order-book-backed) > spot/replacement OEM. Tooling income is one-off - separate it from product revenue when judging growth.",
     "financials": "D1: split growth into (a) underlying OEM production growth (SIAM data), (b) CPV/share gains, (c) new-program ramps - a component maker growing at market rate has NO story; 1.5-2x market = content story, verify against production prints. RM pass-through is contractual with a lag (usually quarterly resets): margin compression in commodity-spike quarters recovers 1-2 quarters later - do not call a spike quarter a structural break, and check whether recovery actually arrived. D2: capex-ahead-of-ramp is NORMAL (win -> 12-18m capex -> revenue): CWIP tied to a NAMED program is fine, CWIP without disclosed programs is not. OEM receivables are safe but 60-90 days; aftermarket/export receivables carry real credit risk - split DSO analysis if disclosed. D3: FCF-negative during win-driven capex cycles is acceptable IF program-cycle incremental ROCE clears hurdle - judge the cycle, not the point-in-time FCF.",
@@ -61,7 +224,6 @@
     "valuation": "The EV-content premium question dominates sector multiples: anchor any premium/discount discussion in the ev_revenue_share taxonomy split and growth_vs_underlying, not in narrative enthusiasm.",
     "takeaways": "Monitorables vocabulary: next SIAM production print, disclosed order-win announcements, program ramp milestones (named plants), rare-earth policy news, quarterly export mix, top-customer platform news."
   },
-
   "forensic_signatures": [
     "Order-book inflation via changed counting conventions (lifetime vs annual value) - compare definitions across presentations",
     "Related-party aftermarket distribution entities",
@@ -69,20 +231,86 @@
     "CWIP without named programs while 'capacity expansion' is the narrative",
     "Export receivables aging hidden in consolidated DSO"
   ],
-
   "data_cadence": [
-    {"print": "SIAM production data", "when": "~10th of month", "source": "siam.in"},
-    {"print": "ACMA industry performance", "when": "half-yearly", "source": "acma.in"},
-    {"print": "Quarterly results + concall", "when": "within 45 days", "source": "BSE"},
-    {"print": "Order-win announcements", "when": "event-driven", "source": "exchange filings"},
-    {"print": "China rare-earth export policy", "when": "event-driven", "source": "news"}
+    {
+      "print": "SIAM production data",
+      "when": "~10th of month",
+      "source": "siam.in"
+    },
+    {
+      "print": "ACMA industry performance",
+      "when": "half-yearly",
+      "source": "acma.in"
+    },
+    {
+      "print": "Quarterly results + concall",
+      "when": "within 45 days",
+      "source": "BSE"
+    },
+    {
+      "print": "Order-win announcements",
+      "when": "event-driven",
+      "source": "exchange filings"
+    },
+    {
+      "print": "China rare-earth export policy",
+      "when": "event-driven",
+      "source": "news"
+    }
   ],
-
   "classic_mistakes": [
     "Valuing on order-book multiples without conversion history",
     "Missing the pass-through lag - calling a commodity-spike quarter a structural margin break",
     "Crediting EV optionality while ignoring the ICE cash-cow melt rate",
     "Comparing CPV across companies with different content-counting definitions",
     "Treating growth at market rate as a content story"
+  ],
+  "sector_entity": "Auto Components",
+  "members": [
+    {
+      "name": "Sona BLW Precision Forgings Limited (Sona Comstar)",
+      "ticker": "SONACOMS",
+      "screener_slug": "SONACOMS"
+    },
+    {
+      "name": "Bharat Forge",
+      "ticker": "BHARATFORG",
+      "screener_slug": "BHARATFORG"
+    },
+    {
+      "name": "Uno Minda",
+      "ticker": "UNOMINDA",
+      "screener_slug": "UNOMINDA"
+    },
+    {
+      "name": "Schaeffler India",
+      "ticker": "SCHAEFFLER",
+      "screener_slug": "SCHAEFFLER"
+    },
+    {
+      "name": "Endurance Technologies",
+      "ticker": "ENDURANCE",
+      "screener_slug": "ENDURANCE"
+    },
+    {
+      "name": "Samvardhana Motherson International",
+      "ticker": "MOTHERSON",
+      "screener_slug": "MOTHERSON"
+    },
+    {
+      "name": "Sansera Engineering",
+      "ticker": "SANSERA",
+      "screener_slug": "SANSERA"
+    },
+    {
+      "name": "Happy Forgings",
+      "ticker": "HAPPYFORGE",
+      "screener_slug": "HAPPYFORGE"
+    },
+    {
+      "name": "Ramkrishna Forgings",
+      "ticker": "RKFORGE",
+      "screener_slug": "RKFORGE"
+    }
   ]
 }

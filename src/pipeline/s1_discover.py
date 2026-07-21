@@ -6,7 +6,7 @@ Spec: nodes/s1_discover. Emits the url_plan s2 executes.
 import json
 import os
 import time
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse
 
 import requests
 
@@ -170,16 +170,42 @@ def discover_node(state) -> dict:
     seen: set = set()
     reads: list[dict] = []
 
-    # --- company: deterministic screener URLs first (no search needed)
-    reads.append({"target": "screener", "doc_class": "screener_page", "priority": 1,
-                  "urls": [f"https://www.screener.in/company/{profile['screener_slug']}/consolidated/"],
-                  "batch": False})
-    # Phase 5.3: full peer set — screener parses are free (zero LLM)
-    peer_urls = [f"https://www.screener.in/company/{s}/consolidated/"
-                 for s in profile.get("peer_screener_slugs", [])[:8]]
-    if peer_urls:
-        reads.append({"target": "peer_screeners", "doc_class": "screener_page",
-                      "priority": 2, "urls": peer_urls, "batch": True})
+    # --- Round 3.2: sector-scoped numeric backbone first. When the
+    # sector backbone (screener parse + price series for ALL members) is
+    # fresh, this run rehydrates it in s2 and emits NO screener reads;
+    # stale → refreshed INLINE here (zero LLM either way). Any failure
+    # falls back to the classic per-run screener reads below.
+    from src.packs import sector_members
+    backbone = None
+    members = sector_members(pack)
+    if state.get("persist") and plan.get("sector_entity_id") and members:
+        try:
+            from src.ingestion.sector_backbone import ensure_backbone
+            backbone = ensure_backbone(plan["sector_entity_id"], pack,
+                                       run_id=state.get("run_id") or None,
+                                       force=bool(state.get("refresh_sector")))
+        except Exception as e:
+            print(f"  [s1][warn] sector backbone unavailable ({e}) — "
+                  f"falling back to per-run screener reads")
+            backbone = None
+    own_slug = profile["screener_slug"]
+    if backbone and own_slug not in backbone.get("members", {}):
+        # the run company itself failed refresh — a peers-only backbone
+        # cannot serve this run; use the classic path wholesale
+        print(f"  [s1][warn] backbone lacks {own_slug} — classic screener reads")
+        backbone = None
+    if not backbone:
+        # --- classic path: deterministic screener URLs (no search needed)
+        reads.append({"target": "screener", "doc_class": "screener_page", "priority": 1,
+                      "urls": [f"https://www.screener.in/company/{profile['screener_slug']}/consolidated/"],
+                      "batch": False})
+        # Phase 5.3: full peer set — screener parses are free (zero LLM);
+        # peers = sector registry members minus the run company
+        peer_urls = [f"https://www.screener.in/company/{m['screener_slug']}/consolidated/"
+                     for m in members if m["screener_slug"] != own_slug][:8]
+        if peer_urls:
+            reads.append({"target": "peer_screeners", "doc_class": "screener_page",
+                          "priority": 2, "urls": peer_urls, "batch": True})
 
     # --- concalls + AR: screener's Documents links are authoritative (BSE
     # PDFs) and replace ddgs hunting entirely when available (Phase 1)
@@ -208,12 +234,9 @@ def discover_node(state) -> dict:
                           "title": f"Annual report ({ars[0]['label']})"})
             seen.add(ars[0]["url"])
             ar_covered = True
-        # Phase 3.4 (paid budget): FY-1 annual report for forensic trends
-        if len(ars) > 1:
-            reads.append({"target": "annual_report_fy1", "doc_class": "annual_report",
-                          "priority": 2, "urls": [ars[1]["url"]], "batch": False,
-                          "title": f"Annual report ({ars[1]['label']})"})
-            seen.add(ars[1]["url"])
+        # (Round 4.5: the FY-1 AR read is DROPPED — the latest AR's
+        # prior-year comparatives + screener's 9y statements cover trends,
+        # and the M&M FY-1 conglomerate AR was the chronic 64K overflow.)
     except Exception as e:
         print(f"  [s1] screener doc links unavailable ({e}) — using ddgs for "
               f"transcripts/AR")
@@ -238,48 +261,16 @@ def discover_node(state) -> dict:
             else:
                 print(f"  [s1] no transcript found for {qq['q']}{qq['fy']}")
 
-    # --- valuation history: deterministic URL TEMPLATES from the ticker
-    # (generalized — no per-company URLs; config override is a rare escape
-    # hatch only). Each candidate is fetched and validated for shape AND
-    # company identity before the read is emitted: ddgs is nondeterministic
-    # and a mis-resolved ticker once served another company's page.
-    vh_covered = False
-    vh_candidates = ([profile["valuation_history_url"]]
-                     if profile.get("valuation_history_url") else []) + \
-        [f"https://www.wisesheets.io/pe-ratio/"
-         f"{quote(profile['ticker'], safe='')}.NS"]
-    company_tokens = [t.lower() for t in
-                      ([profile["name"].split()[0]] +
-                       list(profile.get("aliases") or []))
-                      if len(t) >= 4]
-    for vh_url in vh_candidates:
-        try:
-            from src.ingestion.fetcher import (
-                fetch_document, looks_like_valuation_history)
-            doc = fetch_document(vh_url)
-            if not looks_like_valuation_history(doc, company_tokens):
-                print(f"  [s1] valuation-history candidate failed identity/"
-                      f"shape validation — skipping: {vh_url}")
-                continue
-        except Exception as e:
-            print(f"  [s1] valuation-history candidate unreachable ({e}) — "
-                  f"skipping: {vh_url}")
-            continue
-        reads.append({"target": "valuation_history",
-                      "doc_class": "valuation_history", "priority": 2,
-                      "urls": [vh_url], "batch": False,
-                      "title": "PE ratio history"})
-        seen.add(vh_url)
-        vh_covered = True
-        break
+    # (Round 2.4: the valuation_history read — wisesheets PE-history
+    # scraping + shape/identity validation — is RETIRED. The own-history
+    # PE series is now computed in s3 from Yahoo FY-end closes ÷ annual
+    # EPS, both already observed deterministically.)
 
     # --- company docs
     for tmpl, doc_class, prio, n in COMPANY_DOC_QUERIES:
         if doc_class == "annual_report" and ar_covered:
             continue
         if doc_class == "investor_presentation" and ip_covered:
-            continue
-        if doc_class == "valuation_history" and vh_covered:
             continue
         found = _search([(tmpl.format(**slots), doc_class, n)], seen, timelimit="y")
         if not found:
@@ -332,10 +323,8 @@ def discover_node(state) -> dict:
                       "priority": 2, "urls": [u["url"] for u in lit[:2]],
                       "batch": True, "title": "Litigation / regulatory action"})
 
-    vp = _search([(COMPANY_NEWS_QUERIES[3][0].format(**slots), "valuepickr", MAX_RESULTS_DATA)], seen)
-    if vp:
-        reads.append({"target": "valuepickr", "doc_class": "valuepickr", "priority": 3,
-                      "urls": [vp[0]["url"]], "batch": False})
+    # (Round 4.5: the valuepickr read is DROPPED — forum claims added
+    # little cited value; H keeps rating/news breadth.)
 
     # --- macro themes (skipped if fresh); commodities from pack subset
     if not plan.get("macro_fresh"):
@@ -384,5 +373,9 @@ def discover_node(state) -> dict:
         reads.remove(cut)
 
     print(f"[s1_discover] url plan: {len(reads)} read calls "
-          f"({sum(len(r['urls']) for r in reads)} URLs, {len(seen)} discovered)")
-    return {"url_plan": reads}
+          f"({sum(len(r['urls']) for r in reads)} URLs, {len(seen)} discovered)"
+          + (" + sector backbone" if backbone else ""))
+    out = {"url_plan": reads}
+    if backbone:
+        out["backbone"] = backbone
+    return out

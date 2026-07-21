@@ -1,70 +1,68 @@
 {
   "fingerprint": {
-    "claim_checks": 30,
+    "claim_checks": 24,
     "quality": {
-      "total": 515,
-      "unresolved": 2,
-      "verified_supported": 177,
-      "verified_total": 192
+      "total": 480,
+      "unresolved": 9,
+      "verified_supported": 158,
+      "verified_total": 200
     },
     "sections": {
       "B": {
         "blocks": {
-          "flag": 3,
           "metric_card": 2,
           "narrative": 5,
           "ranked_list": 1,
           "table": 1
         },
-        "claims": 20,
-        "insufficiencies": 8
+        "claims": 18,
+        "insufficiencies": 7
       },
       "C": {
         "blocks": {
+          "flag": 1,
           "metric_card": 1,
-          "narrative": 6,
-          "ranked_list": 1,
-          "table": 1
-        },
-        "claims": 20,
-        "insufficiencies": 9
-      },
-      "D": {
-        "blocks": {
           "narrative": 4,
           "ranked_list": 1,
-          "table": 2
-        },
-        "claims": 20,
-        "insufficiencies": 11
-      },
-      "D1": {
-        "blocks": {
-          "flag": 3,
-          "metric_card": 3,
-          "narrative": 3,
-          "ranked_list": 1,
-          "table": 2
-        },
-        "claims": 18,
-        "insufficiencies": 8
-      },
-      "D2": {
-        "blocks": {
-          "flag": 2,
-          "metric_card": 1,
-          "narrative": 5,
           "table": 1
         },
         "claims": 20,
         "insufficiencies": 7
       },
-      "D3": {
+      "D": {
         "blocks": {
-          "flag": 2,
-          "metric_card": 1,
           "narrative": 3,
           "ranked_list": 1,
+          "table": 3
+        },
+        "claims": 15,
+        "insufficiencies": 10
+      },
+      "D1": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 2,
+          "narrative": 6,
+          "table": 3
+        },
+        "claims": 20,
+        "insufficiencies": 8
+      },
+      "D2": {
+        "blocks": {
+          "flag": 7,
+          "metric_card": 1,
+          "narrative": 5,
+          "table": 1
+        },
+        "claims": 25,
+        "insufficiencies": 7
+      },
+      "D3": {
+        "blocks": {
+          "flag": 4,
+          "metric_card": 1,
+          "narrative": 4,
           "table": 1
         },
         "claims": 20,
@@ -74,66 +72,66 @@
         "blocks": {
           "flag": 3,
           "metric_card": 1,
-          "narrative": 5,
+          "narrative": 4,
           "ranked_list": 1,
           "table": 1
         },
-        "claims": 20,
-        "insufficiencies": 8
+        "claims": 25,
+        "insufficiencies": 9
       },
       "F": {
         "blocks": {
-          "flag": 6,
+          "flag": 5,
           "metric_card": 2,
-          "narrative": 3,
+          "narrative": 2,
           "ranked_list": 1,
           "table": 1
         },
         "claims": 18,
-        "insufficiencies": 9
+        "insufficiencies": 12
       },
       "G": {
         "blocks": {
           "flag": 1,
           "metric_card": 1,
-          "narrative": 4,
+          "narrative": 3,
+          "ranked_list": 1,
           "table": 1
         },
-        "claims": 13,
-        "insufficiencies": 6
+        "claims": 15,
+        "insufficiencies": 5
       },
       "H": {
         "blocks": {
-          "flag": 1,
+          "flag": 3,
           "metric_card": 1,
-          "narrative": 1,
-          "ranked_list": 2
+          "narrative": 3,
+          "ranked_list": 1
         },
-        "claims": 20,
-        "insufficiencies": 8
+        "claims": 18,
+        "insufficiencies": 7
       },
       "I": {
         "blocks": {
-          "flag": 1,
           "metric_card": 2,
           "narrative": 7,
           "table": 1
         },
-        "claims": 14,
-        "insufficiencies": 6
+        "claims": 8,
+        "insufficiencies": 5
       },
       "J": {
         "blocks": {
           "narrative": 1,
           "ranked_list": 3
         },
-        "claims": 10,
-        "insufficiencies": 8
+        "claims": 14,
+        "insufficiencies": 6
       }
     }
   },
-  "frozen_at": "2026-07-18T09:55:14.157194+00:00",
-  "report_version_id": "b14b5ef6-4373-4251-97f5-c85ab6dd2546",
+  "frozen_at": "2026-07-21T20:55:41.240494+00:00",
+  "report_version_id": "5ecfb717-a5d7-4184-86b1-372cd989998f",
   "ticker": "SONACOMS",
-  "version": 18
+  "version": 21
 }

@@ -52,6 +52,13 @@ FIREWORKS_RPM = int(os.environ.get("FIREWORKS_RPM", "30"))
 FIREWORKS_COST_IN_PER_M = float(os.environ.get("FIREWORKS_COST_IN_PER_M", "0.55"))
 FIREWORKS_COST_OUT_PER_M = float(os.environ.get("FIREWORKS_COST_OUT_PER_M", "2.19"))
 
+# Round 2.3: optional reasoning caps, per call class (probe-verified
+# 2026-07-21: the endpoint accepts reasoning_effort; "none" disables M3
+# reasoning entirely). EMPTY = off (no behavior change). Activate one
+# class at a time via .env and validate with diff_golden before keeping.
+REASONING_EFFORT_EXTRACT = os.environ.get("REASONING_EFFORT_EXTRACT", "")
+REASONING_EFFORT_VERIFY = os.environ.get("REASONING_EFFORT_VERIFY", "")
+
 
 def fireworks_configured() -> bool:
     return not (_is_placeholder(FIREWORKS_API_KEY) or
@@ -90,11 +97,11 @@ COMPANIES = [
         "segments": ["EV driveline", "differential assemblies"],
         "aliases": ["Sona BLW", "Sona Comstar"],
         "screener_slug": "SONACOMS",
-        "peer_screener_slugs": ["BHARATFORG", "UNOMINDA", "SCHAEFFLER", "ENDURANCE",
-                                "MOTHERSON", "SANSERA", "HAPPYFORGE", "RKFORGE"],
-        # PE-history comes from ticker-derived URL templates in s1 (with
-        # identity validation); add "valuation_history_url" here ONLY as a
-        # rare per-company escape hatch when the templates miss.
+        # Round 3.1: peers come from the sector pack's members registry
+        # (data/sector_packs/<pack_id>.json), not per-company config.
+        # (Round 2.4: PE history is COMPUTED in s3 from Yahoo FY-end
+        # closes ÷ annual EPS — the wisesheets scrape and its
+        # valuation_history_url escape hatch are retired.)
     },
     {
         "label": "M&M",
@@ -104,9 +111,11 @@ COMPANIES = [
         "segments": ["SUV", "tractor", "commercial vehicle"],
         "aliases": ["Mahindra", "M&M"],
         "screener_slug": "M%26M",
+        # Peers from the auto_oem pack members registry (Round 3.1).
         # Tata Motors demerged (2025): TMPV = passenger vehicles (the SUV
-        # comparator), TMCV = the CV entity; old TATAMOTORS slug 404s
-        "peer_screener_slugs": ["TMPV", "TMCV", "MARUTI", "ESCORTS", "HYUNDAI"],
+        # comparator), TMCV = the CV entity; old TATAMOTORS slug 404s.
+        # TMCV is a registry member (page parsed) but has no peer_of
+        # edge — it stays out of the peer TABLE, as before.
     },
 ]
 
@@ -125,6 +134,11 @@ PREFLIGHT_TIMEOUT = 6            # seconds, requests pre-flight
 # Freshness (days) before shared layers are re-read
 MACRO_FRESH_DAYS = 7
 SECTOR_FRESH_DAYS = 30
+# Round 3.2: the sector numeric backbone (screener parse + Yahoo closes
+# for ALL member stocks) refreshes at most once per window; any member's
+# stock run auto-refreshes it inline when stale. Zero LLM either way —
+# the TTL exists so N member runs share ONE fetch pass, not for cost.
+SECTOR_BACKBONE_FRESH_DAYS = float(os.environ.get("SECTOR_BACKBONE_FRESH_DAYS", "1"))
 
 # Domain tables (playbook §0; extended per run post-mortems)
 TIER1_DOMAINS = [

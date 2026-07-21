@@ -42,6 +42,14 @@ gaps or don't state them.** Also: hand H its risk candidates
    gaining/losing share per industry data (calc vs SIAM/FADA/sector
    series), stated in points with periods.
 
+6. **Post-restructuring non-comparability** (Round 5.4): a peer whose
+   numbers reflect a recent demerger, merger or major restructuring
+   (e.g. Tata Motors PV post the 2025 demerger — PE 1.4x, ROE 76% are
+   artifacts of the split balance sheet) must be DECLARED
+   non-comparable for the affected metrics and excluded from
+   best/worst framing — never ranked as if the print were a
+   steady-state number.
+
 ## Output additions
 `"risk_candidates_for_H": [{"dimension":"EBITDA margin","gap":"-480bps vs
 peer median","attribution":"unexplained","calc":"peer_table"}]`

@@ -99,9 +99,11 @@ Dedup in `save_entity_relationship` on (from, to, type).
 - `section_B` … `section_J` — synthesis envelopes (company layer)
 - `extract:{source_document_id}` — a document's extraction output
   (passages with tags + evidence-row ids, metric candidates, guidance
-  items…). Reuse loads the **latest version only**. Line-level tags —
-  and, per the R3 plan, per-passage section maps and the extraction
-  focus-hash — live here.
+  items…). Reuse loads the **latest version only**. Line-level tags
+  live here: the `passage_tags` map (evidence_id → tags, persisted
+  since Round 1.3, 2026-07-21) is rehydrated on reuse; pre-fix entries
+  fall back to `risk_evidence_ids` → risk_signal. Per-passage section
+  maps and the extraction focus-hash join them in Round 4.
 - `concall_cross_quarter` — batched/trails-pass output
   (guidance_evolution[], recurring_themes[])
 

@@ -144,6 +144,17 @@ def get_source_document_by_url(url: str) -> Optional[str]:
     return rows.data[0]["id"] if rows.data else None
 
 
+def get_source_document_by_fetch_hash(fetch_hash: str) -> Optional[str]:
+    """Round 5: reuse lookup by the FETCHED text's hash — BSE rotates
+    its Pname=<guid> URLs, so URL-keyed reuse misses and used to force
+    full re-extractions of unchanged documents ($0.48 once)."""
+    client = get_client()
+    rows = (client.table("source_documents").select("id")
+            .filter("metadata->>fetch_hash", "eq", fetch_hash)
+            .order("ingested_at", desc=True).limit(1).execute())
+    return rows.data[0]["id"] if rows.data else None
+
+
 def get_evidence_for_document(source_document_id: str) -> List[dict]:
     """Existing evidence rows for a document, in insertion order. Used to
     reuse chunks when a rerun re-reads a page whose content hasn't changed."""

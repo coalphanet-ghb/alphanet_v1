@@ -24,6 +24,8 @@ class ReportState(TypedDict):
 
     # s1_discover
     url_plan: NotRequired[List[dict]]   # [{target, doc_class, urls, batch, priority}]
+    backbone: NotRequired[dict]         # Round 3.2: {"members": {slug: content}} — sector-stored screener+price data; s2 rehydrates instead of fetching
+    refresh_sector: NotRequired[bool]   # --refresh-sector: force backbone refresh
 
     # s2_extract (in-memory working pools; persisted as they land)
     evidence_pool: NotRequired[List[dict]]      # [{id, text, doc_class, url, title, tags, page}]

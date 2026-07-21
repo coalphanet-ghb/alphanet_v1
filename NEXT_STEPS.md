@@ -2,7 +2,464 @@
 
 ---
 
-# ARCHITECTURE PLAN — three-layer pipelines + Extraction 3.0 (owner-decided 2026-07-19)
+# THE FIVE-ROUND PLAN — de-clutter the pipeline end to end (owner-final 2026-07-21)
+
+Absorbs the R0–R5 architecture plan (kept below for its target
+architecture + storage table) wholesale — R0→Round 1 (plus the
+tag-persistence fix found 2026-07-21), R1→Round 2, R2→Round 3,
+R3→Round 4, R4+R5→Round 5 — and through it the O-plan (bottom of file,
+kept for per-item mechanics). Locked directions, unchanged: product
+for others; the report envelope is the future UI's API; the s9
+verifier is a PRODUCT FEATURE (full coverage stays); the fixed
+F→G→H→C→I→J flow stays; DB schema FROZEN (DB_SCHEMA.md); the
+deterministic spine (unit guard, claims pool-gate, identity
+validation) is untouchable. Discipline: every change lands ALONE →
+dry-run → live run → diff_golden → owner green-flag or rollback. One
+change in flight at a time.
+
+## The waste model — the goal, stated measurably
+
+Baseline: ~380K input / 300–500K output tokens, $0.8–1.4, ~25 min per
+run. At M3 pricing (in $0.55/M, out $2.19/M) ONE OUTPUT TOKEN COSTS AS
+MUCH AS FOUR INPUT TOKENS, and output (which includes all hidden
+reasoning) is at least half the bill. Every plan item cuts one of
+three waste classes — the test any future item must also pass:
+
+**INPUT waste** — billed prompt tokens the model can never use:
+- the computed-financials blob JSON-dumped into 8 prompts
+  (B/D1/D2/D3/D/E/F/C), each copy carrying inputs[] uuid-lineage
+  arrays models never cite (they cite calc:<id>, never the uuids);
+- the same 40K evidence walls fed to several nodes (concall wall to
+  D1+D3+F; AR wall to D2+D3+B+E), greedily head-first, no per-node
+  relevance;
+- J: 8 envelopes × up to 100K chars in, a 4-block section out — the
+  worst input→output ratio in the graph;
+- C: up to 200 edges ≈ 70K chars, far beyond what golden C cites;
+- F: ten context feeds, six of them overlapping encodings of guidance;
+- verifier: the same 1,200-char excerpt re-rendered for every claim
+  citing it within a batch.
+
+**MIDDLE waste** — machinery doing work the pipeline discards,
+duplicates, or shouldn't own:
+- wisesheets valuation-history scraping + its validators, replaceable
+  by dividing two series already stored (closes ÷ EPS);
+- reads that lose to screener in s3 dedup (_DOC_PRIORITY: screener
+  90–100 vs results_pdf 80 vs annual_report 60): AR statement cells,
+  results PDFs; plus FY-1 AR, valuepickr, separate shareholding —
+  dropped by owner decision 2026-07-19;
+- stale extractions silently reused after focus-prompt changes (no
+  focus-hash);
+- numeric-backbone work (screener parse, closes) re-done per stock run
+  though it is sector-scoped by nature;
+- the TAG-PERSISTENCE GAP (verified in code 2026-07-21): per-passage
+  tags are never persisted and reuse hard-sets tags=[] — H's
+  risk_signal 40K feed starves on reuse runs, tag-filtered feeds
+  cannot be built on, and reuse-run diffs vs the (all-fresh) goldens
+  lie.
+
+**OUTPUT waste** — billed completion tokens that produce nothing:
+- reasoning spirals: 1–2/run × a full 64K budget ≈ $0.15–0.30/run
+  (hypothesis: correlates with large low-structure contexts — Round 1
+  measures per node, Round 5 verdicts);
+- the M&M FY-1 conglomerate AR: overflowed 64K output TWICE (paid
+  both attempts), then skipped — extraction paid for and discarded;
+- AR/results extraction of standard statement cells that s3 dedup
+  throws away (screener outranks them);
+- every spiral/truncation retry re-bills the input too.
+
+Rounds 1–2 cut waste while the CURRENT goldens are still a fair
+baseline; Round 3 restructures ownership of shared work; Round 4
+rebuilds ingestion (goldens RE-FROZEN — after it the old baseline is
+no longer a fair diff); Round 5 slims synthesis against the NEW
+goldens and freezes the product contract. That ordering is
+load-bearing.
+
+## Round 1 — Baseline: measure, probe, un-poison the diff  [CODE LANDED 2026-07-21 — gate runs DEFERRED by owner]
+
+Goal: every later cut justified by a table, not a guess — and repair
+the one defect that makes reuse-run diffs unusable as arbitration.
+
+| # | Item | Waste class hit |
+|---|---|---|
+| 1.1 | Per-node telemetry in llm.py: THREAD-LOCAL node id (the B/E/D1/D2/D3 wave runs parallel — a global would misattribute); per-node calls/tokens/cached-tokens/latency/cost + spiral & truncation counters at the three retry sites (run_section, s2 _extract_call, s9 batches); sidecar data/telemetry/{run_id}.json (runs table stays scalar — DB_SCHEMA.md); end-of-run per-node cost table | enabler for ALL — turns input+output waste into line items |
+| 1.2 | Verifier trend stats into the sidecar (claims checked, by-verdict, batches) — the 6–16% noise becomes a monitorable trend | enabler — protects the verifier product feature while it is optimized |
+| 1.3 | TAG-PERSISTENCE FIX (the round's one deliberate behavior change): persist per-passage evidence_id→tags in extract:{doc_id}; rehydrate on reuse; backfill risk_signal from stored risk_evidence_ids for pre-fix entries | MIDDLE — reuse runs stop starving H's risk feed; prerequisite for Round 5's tag-filtered feeds AND for trusting every diff_golden verdict from Round 2 on |
+| 1.4 | Fireworks prefix-caching probe (via the new raw multi-turn chat helper — the conversation API Round 4 needs did not exist in llm.py) — does usage report cached_tokens, is it discounted? → sets Round 4's AR bundle count (3 vs 5) | INPUT — prices the AR-conversation design before committing to it |
+| 1.5 | Reasoning-effort / thinking-budget param probe on the M3 endpoint (never tried) | OUTPUT — a param capping reasoning would attack spirals directly |
+
+Gate: SONA --reingest run (repopulates tags under 1.3 + telemetry on
+the heaviest path) AND one normal run (reuse path) — per-node cost
+tables from both, diff_golden clean on both, probe verdicts logged
+below.
+
+## Round 2 — No-regret cuts  [CODE LANDED 2026-07-21 — see Round 2 log]
+
+Goal: the cheap 80% of input/output cuts whose quality risk is ~zero,
+taken while the frozen goldens are still a fair baseline.
+
+| # | Item | Waste class hit |
+|---|---|---|
+| 2.1 | Strip inputs[] uuid arrays from rendered calc context (_computed in s4_synth; lineage stays in state/DB — persistence concern, not prompt concern) | INPUT — est. 30–50% of the calc blob × 8 prompts; best effort-to-savings ratio in the pipeline |
+| 2.2 | Verifier excerpt dedup: render each unique excerpt once per batch with an index; claims reference indices. Coverage UNTOUCHED | INPUT — ~half of verifier input; the trust story keeps full coverage |
+| 2.3 | Reasoning-brevity line in ENVELOPE_CONTRACT (+ apply the effort param if probe 1.5 said yes) | OUTPUT — attacks the $0.15–0.30/run spiral burn |
+| 2.4 | Retire wisesheets: compute annual PE (yearly closes ÷ annual EPS, both already stored) in s3; delete the valuation_history read, focus and validators | MIDDLE — deletes a fragile source (Macy's incident, connection resets) and FIXES the M&M own-history percentile insufficiency |
+
+Gate: per-node tables show the drop cut-by-cut; M&M percentile
+renders from the computed series; diff_golden clean after EVERY single
+cut. Expected: ~$1.0 → ~$0.7.
+
+## Round 3 — Sector pipeline elevation  [CODE LANDED 2026-07-21 — see Round 3 log]
+
+Goal: move sector-scoped work out of the per-stock hot path so Round
+4's stock pipeline can assume it. Structure, not cuts — lands before
+the rebuild that depends on it.
+
+| # | Item | Waste class hit |
+|---|---|---|
+| 3.1 | Sector registry: member stocks (= the peer set) migrate OUT of config.COMPANIES peer_screener_slugs; member_of entity_relationships (text value — schema stays frozen) | MIDDLE — peer sets become sector data, not per-company hardcode |
+| 3.2 | Numeric backbone sector-scoped: screener parse + Yahoo closes (+ computed-PE inputs) run per SECTOR, stored per member stock, freshness-TTL'd, auto-refreshed INLINE by a stale stock run (one command still produces a report) | MIDDLE — N member stocks stop re-doing the same deterministic work; peers' data is already there when any member runs |
+| 3.3 | Sector ingestion skill docs (trusted sources, what to extract, how to analyse) for auto_ancillaries + auto_oem — repo files, git-versioned | enabler — the sector layer gets first-class inputs, not just a synthesis overlay |
+
+Gate: SONA stock run pulls its backbone from sector-stored data; M&M
+5-peer table intact; dry-run wiring clean.
+
+## Round 4 — Extraction 3.0  [CODE LANDED 2026-07-22 — see Round 4 log; goldens RE-FROZEN at gate]
+
+Goal: restructure ingestion so extraction spends output tokens only on
+what downstream keeps — and never overflows.
+
+| # | Item | Waste class hit |
+|---|---|---|
+| 4.1 | Latest-AR-only conversation: ONE /chat/completions conversation (chat API productionized from probe 1.4's helper), 3–5 thematic bundles (count = 1.4's verdict), each with a FRESH 64K output budget; terse-but-info-rich demanded; SKIP standard statement line-items (screener supplies them at higher dedup authority) | OUTPUT — structurally kills the big-AR overflow (no splitter ever built) + stops paying for statement cells dedup discards. INPUT — bundle count set by measured caching economics |
+| 4.2 | Every extracted line verbatim + uuid (citation spine untouchable), SECTION-MAPPED at ingestion (cross-section duplication by design), DATE-TAGGED (source_documents.published_date populated per doc class, joined into the pool) | enabler for Round 5's INPUT cuts — per-section slices replace the 40K walls |
+| 4.3 | Concalls ×4 PARALLEL per-call + ONE cheap trails-pass over the four extraction outputs → guidance_evolution / recurring_themes (cross-quarter view preserved; trails-pass input = extractions, not transcripts) | MIDDLE — isolation per call; the trails-pass reads ~10K instead of 4 transcripts |
+| 4.4 | PPT one-shot exhaustive (every number/guidance/claim/projection, section-mapped); rating rationales kept; news as today (≤1y cap) | kept-value items, no waste added |
+| 4.5 | DROPS: FY-1 AR, results_pdf, valuepickr, separate shareholding read (owner 2026-07-19) | MIDDLE — four read classes whose content loses dedup or adds little |
+| 4.6 | Focus-hash stamped in extract:{doc_id} → auto re-read on prompt change | MIDDLE — kills the stale-extraction class (today: --reingest or manual invalidation only) |
+
+Gate: SONA + M&M full runs; M&M AR ingested ZERO skips; citations
+≥98%; goldens RE-FROZEN as the new baseline.
+
+## Round 5 — Synthesis slimming + contract freeze  [CODE LANDED 2026-07-22 — see Round 5 log]
+
+Goal: collapse the generic context walls into targeted slices, prove
+or kill the spiral hypothesis, freeze the contract the product phase
+builds on.
+
+| # | Item | Waste class hit |
+|---|---|---|
+| 5.1 | Section-mapped context assembly: _evidence consumes 4.2's section maps — the generic 40K doc-class walls collapse into per-section slices | INPUT — the single biggest wall-cut, quality-safe because mapping happened at ingestion |
+| 5.2 | Per-node calc slicing: P&L→D1, BS+battery→D2, CF→D3, vitals→B/E/C; FULL blob only to s4e (calc ids are statement-prefixed — mechanical) | INPUT — ends the ×8 blob duplication that Round 2 only thinned |
+| 5.3 | F feed consolidation: ten feeds → computed scorecard + labeled trails + guidance-tagged passages (tags persist since 1.3) | INPUT — six overlapping guidance encodings → two-plus-slice |
+| 5.4 | J on 10–15K summaries (selective full D+H ONLY if diff_golden shows degradation); C edge-cap set to what goldens actually cite; s4d_followup + news budget keep/cut per citation-count evidence; TMPV non-comparability spec note | INPUT (J, C) + MIDDLE (s4d/news audits) |
+| 5.5 | Spiral verdict: Round-1 vs Round-5 per-node spiral rates — proves or kills the low-structure-context hypothesis (KEEP H+C breadth either way: risk register + sensitivities demonstrably use it) | OUTPUT — if confirmed, the input cuts double as the spiral fix |
+| 5.6 | Contract freeze: envelope/block JSON Schema validated at compose time; per-run report manifest (cost, citations, verifier stats) | product bridge — the UI phase renders THIS, never re-parses markdown |
+
+Gate: ~$0.5–0.7/run; NEW goldens hold; spiral trend down; schema
+validation live. Exit = product era (UI, update pipeline, NBFC pack).
+
+## Round 1 log (verdicts land here as they happen)
+
+- **1.4 prefix caching: ACTIVE** (probed 2026-07-21,
+  scripts/probe_fireworks.py). Serverless M3 reports
+  usage.prompt_tokens_details.cached_tokens; a 16,652-token repeated
+  prefix hit 16,651 cached. CAVEAT: cache-write lags — two identical-
+  prefix calls 2.5s apart both missed (cached=0); minutes later the
+  same prefix fully hit. Round 4 implication: the AR conversation is
+  viable at 4–5 bundles, but bundle calls should be modestly PACED
+  (~30s+) so bundles 2+ hit the cached AR prefix; billing discount on
+  cached tokens to be confirmed on the Fireworks invoice after the
+  first real run.
+- **1.5 reasoning effort: SUPPORTED, and "none" is a real switch**
+  (probed 2026-07-21). `reasoning_effort` is accepted;
+  `"none"` disabled reasoning entirely (completion 52 → 2 tokens on
+  the test task); `"low"` was indistinguishable from default on a
+  trivial task. `max_reasoning_tokens` rejected (HTTP 400).
+  Round 2.3 candidates for `"none"`: s2 extraction (quote-and-record,
+  not analysis) and possibly s9 verification — each lands alone under
+  diff_golden like any other cut.
+- (pending) per-node baseline tables (reingest + normal runs) →
+  data/telemetry/{run_id}.json
+
+## Round 2 log
+
+All four cuts implemented 2026-07-21 (compile + dry-run clean).
+**DISCIPLINE DEVIATION (owner-decided): the Round-1 gate runs were
+skipped, so Rounds 1+2 will be validated TOGETHER on the next live
+runs — per-cut diff_golden attribution is lost for this batch; if the
+diff flags, bisect by reverting cuts one at a time.**
+
+- **2.1** inputs[] stripped from rendered calc context
+  (`_strip_lineage` in s4_synth; also applied to s4d computed lookups).
+  Lineage stays in state/DB.
+- **2.2** verifier excerpt dedup: unique excerpts rendered once per
+  batch as [E<n>], claims reference ids; _SYSTEM rewritten accordingly
+  + a brevity line. Coverage untouched.
+- **2.3** ENVELOPE_CONTRACT rule 9 (reason briefly, one pass).
+  reasoning_effort plumbed llm→config: REASONING_EFFORT_EXTRACT /
+  REASONING_EFFORT_VERIFY env vars, DEFAULT OFF — activate one at a
+  time via .env on a validated run ("none" disables M3 reasoning
+  per probe 1.5).
+- **2.4** wisesheets RETIRED (s1 read + validators + focus + query-bank
+  hunt deleted). s2 now also pulls Yahoo 10y monthly → FY-end (March)
+  closes (zero LLM, identity-validated, "Mar YYYY" parses as the FY);
+  s3 computes annual PE = FY close ÷ annual EPS and derives
+  pe_own_history + re_rating_3y from the computed series.
+  Verified live (free): SONA = 5 FY closes (listed June 2021 — the old
+  "9-year" wisesheets range was always suspect for a 2021 IPO; expect
+  diff_golden to flag percentile n_years 9→5, defensible). M&M gets
+  the full 10 years → its percentile insufficiency becomes computed.
+
+**Run 1 verdict (SONA v19, 2026-07-21, $1.25 — first validation run):**
+- Telemetry table LIVE (run 20f1b2c9). Headlines: `s2:annual_report`
+  $0.48 = 38% of the run — the FY26 AR re-read FRESH because BSE's
+  `Pname=<guid>` URL rotated, so URL-keyed reuse missed (and the fetch
+  hit the 1.2M-char cap; extraction truncated once then converged).
+  Adjusted reuse-run cost ≈ $0.77 (was $0.8–1.4). Synth+verifier input
+  ≈ 293K tokens vs ~380K baseline (~23% cut from 2.1+2.2). ZERO
+  spirals in 36 calls (baseline 1–2/run; contract rule 9's first
+  outing). Verifier ~2.7K tokens/batch (dedup working). Cache
+  confirmed in production: D3's retry hit 22,853 cached tokens.
+- **Measured correction to the plan: J was an overestimated target** —
+  its real input is 26.7K tokens ($0.083), not ~200K; envelope
+  summaries sit far under their 100K caps. Round 5.4's J-summaries cut
+  is demoted to minor. F (36.5K in) confirmed as the input heavyweight
+  → 5.3 stands.
+- **Regression found + fixed same day: 512/550 citations (6.9%
+  unresolved; golden 0.4%), diff_golden FLAG.** Root causes: (a)
+  resolver gap — `evidence:<8-hex>` shorthand (copied by I from H's
+  inline prose via _envelope_summary) resolved as neither the
+  `evidence:` branch (full-uuid only) nor the bare-prefix branch →
+  FIXED, prefix accepted; (b) upstream-summary contagion — FIXED
+  deterministically: `_strip_inline_evidence` removes [uuid]/
+  [evidence:8hex] markers from summary md (sec:/calc:/edge:/trail:
+  labels kept), so downstream nodes physically cannot copy evidence
+  ids they were not given (best-practice #4: fix renderers, not
+  prompts); (c) 2–3 model-mangled uuids (c4656c73-**6c9a** vs golden
+  …-**c6a9**, transposed) — known low-rate class, block citations
+  have no pool-gate; watch.
+- Also observed: 85 id-less claims stripped (C 20/57, I 24/24 —
+  rule-3 drift; verifier coverage 183 vs 192); D claims 20→9
+  (-50% heuristic flag; within the 8–20 contract floor — variance,
+  watch). NEW BACKLOG (middle waste): reuse-by-content-hash after the
+  FREE local fetch, so rotated BSE URLs stop forcing $0.48 re-reads
+  (today reuse is URL-keyed only).
+
+**Next: rerun SONA (~$0.8 — the AR is now stored under its new URL,
+so full reuse) → expect citations ≥98% and no FLAG beyond the known
+percentile n_years 9→5. Then M&M (percentile computed, was
+insufficiency).**
+
+## Round 3 log
+
+Implemented 2026-07-21; compile + dry-run clean; the zero-LLM parts
+LIVE-TESTED (free) — Auto Components backbone refreshed for all 9
+members, stamp fresh, fresh-path load + s2 rehydration asserts pass
+(4,635 screener candidates, 18 own price points, 9 about passages, 9
+doc-link sets), 9 member_of edges written.
+
+- **3.1 registry**: `members` (+`sector_entity`) added to
+  auto_ancillaries.json (9) and auto_oem.json (6, incl. TMCV);
+  `peer_screener_slugs` REMOVED from config.COMPANIES — s1's fallback
+  path now derives peer URLs from the registry too. peer_of edges
+  still decide the peer TABLE (TMCV parses, doesn't join — unchanged).
+  `packs.sector_members()` + `packs.ingest_doc()` accessors.
+- **3.2 backbone**: new `src/ingestion/sector_backbone.py` —
+  ensure/refresh/load; per-member `backbone:{slug}` knowledge entries
+  (layer industry, on the sector entity) + `backbone_stamp` TTL marker
+  (SECTOR_BACKBONE_FRESH_DAYS=1, env-overridable); refresh stores
+  screener candidates + about + doc links + 13 monthly closes + 10y
+  FY-end closes per member and ensures `member_of` edges. s1 ensures
+  the backbone inline (stale → refresh; one command still produces a
+  report) and emits NO screener reads when it serves; s2
+  `_rehydrate_backbone` pours it into the pools in the exact in-run
+  parser shape (s3 untouched). Fallbacks at every step → classic
+  per-run screener reads. `--refresh-sector` CLI forces refresh.
+  Graceful-degradation proof from the live test: HAPPYFORGE's Yahoo
+  lookup returned an empty longName → identity check refused, member
+  stored candidates-only. BONUS: peers' FY-close series now stored →
+  peer PE history computable later for free.
+- **3.3 skill docs**: `auto_ancillaries.ingest.md` + `auto_oem.ingest.md`
+  (trusted sources, what to extract, sector analysis judgement notes) —
+  consumed by Round 4's sector trusted-source reads via
+  `packs.ingest_doc`.
+
+Gate remainder (needs the next PAID run): SONA full run pulling its
+backbone from sector storage end-to-end + M&M peer table intact +
+diff_golden — folded into the combined Rounds 1+2+3 validation run.
+
+## Combined validation run verdict (SONA v20, 2026-07-21, $0.60)
+
+**Cost: $1.0–1.4 baseline → $0.60** (24 calls, 340K in / 189K out;
+wall 19 min). Backbone served 9 member screeners with zero fetches;
+AR fully reused; ZERO spirals AND zero truncations (2nd consecutive
+spiral-free run); citations 463/466 = 99.4% (unresolved-rate FLAG
+cleared; two of the three leftovers are junk citation strings, one is
+the recurring mangled uuid). Output halved vs v19 (189K vs 340K) —
+rule 9 working hard.
+
+**Residual defects found + fixed same day (validate on next run):**
+1. **Envelope over-compression**: H packed a full, high-quality 8-risk
+   register into one ranked_list but emitted 0 claims[] and 0
+   insufficiencies (J: 3 claims) — the verifier had NOTHING to check
+   in H. Rule 9 amended: brevity is REASONING-ONLY; required blocks +
+   rule-3a claims floor + insufficiencies are never sacrificed ("a
+   thin envelope is a defect, not efficiency").
+2. **evidence_id_raw leak**: f4ba4117… (confirmed NOT in DB — a
+   mangled id) cited in v19's H and v20's F. Vector: s4d keeps nulled
+   ids as evidence_id_raw for audit, and the checks JSON was rendered
+   verbatim into D/F/H prompts. New `_checks_json` renderer strips it
+   (audit trail stays in state).
+
+diff_golden v18→v20 flags, dispositioned: H BLOCKS/CLAIMS −50% =
+defect #1 above (content itself full-quality); D 8 and J 3 claims =
+same class; C 30 claims healthy. Expect all three to clear next run.
+
+## Round 4 log
+
+All six items implemented 2026-07-22 (compile + dry-run clean; hashes/
+date-cleaning unit-checked). Owner decision recorded: prompt-level
+optimization of SYNTHESIS nodes is deferred to after Round 5 (no point
+tuning prompts whose context is about to be re-sliced); extraction
+terseness lands here (the AR bundle contract demands terse-but-rich).
+
+- **4.6 focus-hash** (landed first — makes the rest safe): sha256 of
+  (focus+schema[+AR bundles])[:16] stamped in every extract:{doc_id};
+  reuse compares and re-reads on mismatch. Pre-R4 entries are unhashed
+  → the NEXT RUN RE-READS ALL COMPANY DOCS ONCE (that IS the gate
+  reingest) and stamps them.
+- **4.5 drops**: FY-1 AR (the chronic 64K overflow), results_pdf,
+  shareholding hunt, valuepickr — s1 emission + query banks + s2
+  focuses/type-map all removed.
+- **4.2 section maps + dates**: extraction schema now demands
+  per-passage `sections` ([B..I], multi allowed, duplication by
+  design) and per-source `published_date` (strict YYYY-MM-DD or null →
+  source_documents.published_date). Persisted as passage_sections +
+  published_date in extract:{doc_id}; pool entries carry
+  sections/date; rehydrated on reuse. Round 5.1 consumes these.
+- **4.1 AR conversation**: `_ar_conversation` — 5 bundles,
+  OWNER-DESIGNED 2026-07-22: company_and_scale / business_model /
+  growth_outlook / management_commentary + statement_disclosures (kept
+  as the 5th: the AR is the only notes-level source and D1/D2/D3
+  forensics feed on it). Each bundle = ONE call sharing the identical
+  [system, document] prefix (cache-served; generation time covers the
+  cache-write lag) with a FRESH 64K output budget. Style contract:
+  POINTERS NOT PARAGRAPHS — shortest VERBATIM snippet (≤40 words;
+  paraphrase forbidden, the verifier needs verbatim evidence), numbers
+  → metric_candidates. statement_disclosures carries the explicit
+  SKIP-standard-line-items rule; per-bundle truncation reprompt-once;
+  a failing bundle is skipped ALONE (the old single call lost the
+  whole doc); passages deduped across bundles; per-bundle cached-token
+  logging. url_context fallback keeps the single-call path.
+  COST NOTE (owner asked): the conversation re-sends the AR per bundle
+  — worst case (no cache discount) ~$0.70 input for a 250K-token AR vs
+  $0.14 single-call; probe-verified prefix caching makes the real
+  figure far lower (gate run's per-bundle `cached N tok` lines prove
+  it), bought for: fresh 64K per theme (kills the M&M skip), lower
+  truncation/spiral odds, and terser output on the expensive side.
+- **4.3 concall split + trails-pass**: batching machinery deleted;
+  per-transcript reads; guidance_items carry quarter_label (fresh AND
+  reused paths); any fresh concall triggers `_concall_trails_pass` —
+  ONE 16K call over per-quarter OUTPUTS (grouped items + tagged
+  passages, ≤12K chars) rebuilding guidance_evolution/recurring_themes;
+  all-reused runs rehydrate the stored entry as before.
+- **4.4 PPT**: focus upgraded to explicit exhaustive one-shot ("miss
+  nothing quantitative").
+
+**GATE (paid, owner-triggered): SONA run (~$1.5–2: focus-hash forces
+the one-time full re-read) then M&M run — M&M AR zero skips via
+bundles; citations ≥98%; then `diff_golden --freeze` BOTH as the new
+golden baseline (old goldens stop being a fair diff after this).**
+
+**R4 gate outcome (2026-07-22):** first SONA attempt aborted at synth_I
+on a 600s transport read-timeout (slow-spiral shape) → retry-once added
+for envelope calls / verifier batches / AR bundles (HANDOFF3 §5 #6).
+Retry run = SONA v21: NO diff_golden regression flags, 98.1%
+citations, 0 spirals/truncations, AR conversation 5/5 bundles with
+286,272 cached tokens per repeat bundle (cache economics PROVEN),
+trails-pass 23 trails, PPT recovered, $0.70. **v21 FROZEN as the new
+SONA golden.** Owner: M&M deferred to the VERY END (after Round 5).
+Watch items from v21: verifier partials elevated (25 — possible
+≤40-word-pointer effect; M&M decides), 2 mangled uuids, invented
+`events:` citation shorthand (fixed in Round 5 below).
+
+## Round 5 log
+
+All items implemented 2026-07-22 (compile + dry-run clean; validator,
+event labels, section/calc slicing unit-checked). Baseline = golden
+v21. Owner sequencing: SONA validation run next, M&M at the very end.
+
+- **5.1 section-sliced evidence**: `_evidence(..., section=)` consumes
+  Round-4.2 maps — two-pass fill (section-matched first, unmapped
+  legacy as filler, other-section-only EXCLUDED); evidence headers now
+  also carry the doc date. Applied: B/E (15K), D1 (40K→24K), D2
+  (40K→24K + concall 12K→10K), D3 (40K→24K), F (below). H and C keep
+  full breadth BY DESIGN (risk register + sensitivities earn it).
+- **5.2 calc slices**: `_computed(..., slice_=)` — statement slices to
+  D1/D2/D3 (substring membership, overlap fine), vitals to B/E/C/F;
+  FULL blob only to s4e. The ×8 blob duplication is ended.
+- **5.3 F consolidation**: open guidance items DROPPED (duplicate
+  trails); concall wall 40K→16K F-sliced; governance 20K→12K F-sliced;
+  calc → vitals. Scorecard + trails + themes remain the guidance record.
+- **5.4**: C edge cap 200→60 (~50K chars cut); TMPV/post-restructuring
+  non-comparability rule added to G's spec (instruction 6); audits
+  closed with verdicts — s4d_followup KEEP ($0.004/run, measured
+  harmless), news budget KEEP (owner's ≤1y stance; citations do land
+  in F/H), J KEEP as-is (measured 26.7K in — the 100K-cap fear was
+  disproven by telemetry).
+- **5.5 spiral verdict**: post-rule-9 + input cuts: 0 spirals in ~90
+  calls across 3 full runs (baseline 1–2/run × 64K burns). One slow
+  variant hit the transport ceiling once (now retryable). VERDICT:
+  the low-structure-context hypothesis + reasoning-brevity rule are
+  jointly confirmed as the fix; per-node spiral telemetry continues as
+  the regression tripwire.
+- **5.6 contract freeze**: `validate_envelope` in s8_composer —
+  ENVELOPE_CONTRACT_VERSION 1.0.0, per-block-type required fields,
+  validated at compose time, violations logged + recorded (non-fatal);
+  per-run MANIFEST rides the telemetry sidecar (report path, contract
+  version, citation/verifier stats, per-section block/claim counts,
+  schema issues); report_versions.sections_json carries the contract
+  version.
+- **Backlog swept**: `[event:<id>]` deterministic labels for the
+  events pool + resolver branch + contract citation form (kills the
+  invented `events:` shorthand); verifier _MAX_CALLS 10→12 (209 tasks
+  once exceeded 200 — full coverage restored); **content-hash reuse**
+  — fetched text hashed (`fetch_hash` in doc metadata), rotated URLs
+  (BSE Pname guids) now reuse the stored extraction when the focus
+  matches instead of paying for a re-read ($0.48 + $0.047 observed
+  losses of this class).
+
+**GATE: SONA run vs golden v21** — expect: slimmer synth inputs
+(D-family/F), C input down ~12K tokens, citations ≥98%, envelope
+contract violations = 0 or explained, verifier coverage complete
+(no budget-cap line). Then owner green-flag → freeze v22 if diff is
+clean-or-better → **M&M as the final validation** (auto_oem backbone
+build + AR zero-skips + percentile computed + verifier-partials
+comparison for the pointer-style question).
+
+**GATE RESULT (SONA v22, 2026-07-22): PASSED — best run in project
+history.** $0.53 (era baseline $1.0–1.4), wall 10.5 min (was 19–25),
+citations 579/580 = 99.8% (project record; the 1 miss is a single
+mangled uuid), NO diff flags vs v21, schema_issues {} (contract v1.0.0
+clean on all 12 sections), verifier FULL coverage (231/231, 12
+batches), 0 spirals/truncations, invented-events shorthand GONE.
+Measured input cuts vs v21: D2 −66%, D3 −63%, F −41%, D1 −30%, total
+input −31%, output −22%. Verifier is now the top cost node ($0.092) —
+the trust feature as the biggest line item is the correct end-state.
+WATCHES: (1) verifier not-fully-supported 22.5% (43 partial) — 3rd
+elevated run since the terse AR; M&M is the decider; (2) E 31 / F 34
+claims exceed the 8–20 band's ceiling — feeds verifier load; consider
+re-asserting the ceiling if M&M repeats it.
+
+## THE PLAN IS CODE-COMPLETE. What remains after the SONA+M&M gates:
+product era (update pipeline, UI renderer on the frozen contract,
+more sectors/NBFC pack, open-source news sources), the restatement
+policy decision for metric_observations, and the watch list (verifier
+partial rate, mangled-uuid rate, I's output variance).
+
+---
+
+# [ABSORBED 2026-07-21 into the FIVE-ROUND PLAN above — kept for its target architecture + storage decisions] ARCHITECTURE PLAN — three-layer pipelines + Extraction 3.0 (owner-decided 2026-07-19)
 
 Supersedes the O-plan below (its items are absorbed into phases R0–R5;
 disposition at the end of this section). Direction unchanged: product

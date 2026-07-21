@@ -43,6 +43,8 @@ CITATION FORMS (use exactly these; anything else fails resolution):
     invent one)
   - "trail:<id>"             a guidance-evolution trail shown in context
     (labelled [trail:...] — same rule)
+  - "event:<id>"             a pooled event shown in context (labelled
+    [event:...] — same rule; never invent an events:/date shorthand)
 Never invent shorthand (e.g. "[E-Summary]", "evidence 3d11") and never cite
 an evidence uuid you were not given.
 
@@ -81,6 +83,13 @@ NON-NEGOTIABLE RULES:
 7. Conflicting sources: present both with dates; say which is more recent
    or authoritative; never silently pick one.
 8. Output ONLY the JSON envelope. No commentary outside it.
+9. Reason BRIEFLY. Plan the envelope in one pass over the context, then
+   write it. Never re-read, re-derive, or re-check the same material
+   repeatedly in your reasoning — prolonged deliberation burns the output
+   budget the envelope itself needs. Brevity applies to your REASONING
+   ONLY, never to the envelope: every block the node spec requires, the
+   claims floor of rule 3a, and explicit insufficiencies must all still
+   be delivered in full. A thin envelope is a defect, not efficiency.
 """
 
 

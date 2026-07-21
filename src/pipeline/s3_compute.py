@@ -263,7 +263,7 @@ def validate_candidates(state) -> tuple[list[dict], list[str]]:
         elif c.get("doc_class") in ("concall", "annual_report", "results_pdf",
                                     "investor_presentation", "rating_rationale",
                                     "shareholding", "screener_page",
-                                    "valuation_history", "price_history"):
+                                    "price_history"):
             ent = profile.get("entity_id")
         else:
             # sector_page / news / valuepickr numbers are NOT company
@@ -763,29 +763,43 @@ def compute_node(state) -> dict:
             ">=4 quarterly EPS prints per point (price_history source or "
             "quarterly EPS series missing)")
 
-    # Phase 5.4: own-history P/E percentile from the extracted multiple
-    # series (valuation_history reads) — deterministic, never modelled
-    pe_hist = _series(obs, "pe")
+    # Round 2.4: own-history P/E percentile is COMPUTED — annual PE =
+    # FY-end (March) close ÷ that FY's EPS, both observed deterministically
+    # (Yahoo 10y series + screener annual EPS). Replaces the retired
+    # wisesheets valuation_history scrape; deterministic, never modelled.
+    px_y = {o["period_end"]: o for o in obs
+            if o["metric_name"] == "price" and o["period_type"] == "year"}
+    eps_y = {o["period_end"]: o for o in obs
+             if o["metric_name"] == "eps" and o["period_type"] == "year"}
+    pe_hist = []
+    for pend in sorted(set(px_y) & set(eps_y)):
+        p, e = px_y[pend], eps_y[pend]
+        if e["value"] and e["value"] > 0:    # negative/zero EPS: PE undefined
+            pe_hist.append({"period_end": pend,
+                            "value": round(p["value"] / e["value"], 1),
+                            "ids": [p["id"], e["id"]]})
     if val.get("pe") and len(pe_hist) >= 4:
-        hist_vals = [o["value"] for o in pe_hist if o["value"]]
+        hist_vals = [h["value"] for h in pe_hist]
         cur = val["pe"]["value"]
         pct = round(100 * sum(1 for h in hist_vals if h <= cur) / len(hist_vals))
         val["pe_own_history"] = {
             "percentile": pct, "n_years": len(hist_vals),
             "low": round(min(hist_vals), 1), "high": round(max(hist_vals), 1),
             "median": round(sorted(hist_vals)[len(hist_vals) // 2], 1),
-            "inputs": [o["id"] for o in pe_hist]}
+            "note": "annual PE = FY-end (March) close / that FY's reported "
+                    "EPS — computed from observed series, not scraped",
+            "inputs": sorted({i for h in pe_hist for i in h["ids"]})}
         val["re_rating_3y"] = {
             "pe_then": round(pe_hist[-4]["value"], 1), "pe_now": cur,
             "from": pe_hist[-4]["period_end"],
             "note": "pair with the computed EPS CAGR to decompose price "
                     "return into earnings growth vs multiple change",
-            "inputs": [pe_hist[-4]["id"]] + list(val["pe"].get("inputs", []))}
+            "inputs": pe_hist[-4]["ids"] + list(val["pe"].get("inputs", []))}
     else:
         insufficiencies.append(
-            "valuation own-history percentile: PE history series not "
-            "available (valuation_history read missing/unreadable — needs "
-            ">=4 annual multiple observations)")
+            "valuation own-history percentile not computable — needs >=4 "
+            "years of FY-end closes (Yahoo 10y price series) AND annual "
+            "EPS prints for the same fiscal years")
 
     # sector KPIs (generic: look for the metric; else insufficiency)
     skpis = {}

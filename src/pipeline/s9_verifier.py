@@ -7,10 +7,12 @@ values are not LLM-verified (deterministic lineage covers them).
 import json
 
 from src import db
-from src.llm import generate_json
+from src.llm import generate_json, set_current_node, note_wasted_output
 
-_SYSTEM = """You are a verification instrument. For each (claim, evidence)
-pair below, judge ONLY from the evidence excerpts provided:
+_SYSTEM = """You are a verification instrument. The EXCERPTS section lists
+evidence excerpts ONCE each, labelled [E1], [E2], ... The CLAIMS section
+lists claims; each claim's EVIDENCE line names the excerpt ids that are
+its cited evidence. Judge every claim ONLY from its named excerpts:
 - "supported": the excerpts state or directly entail the claim
 - "partial": direction right, but the claim adds precision or scope the
   excerpts do not contain
@@ -25,17 +27,22 @@ page/timestamp). That metadata is part of the evidence: if a claim says
 "Concall transcript (May 2026)" for that quarter, the attribution IS
 supported — do not mark it partial merely because the body text omits the
 quarter. Judge the substance against text + metadata together.
+Reason briefly: one pass per claim, then verdict.
 Return ONLY JSON: {"verdicts": [{"idx": <int>, "verdict": "<one of the four>", "note": "<=20 words"}]}"""
 
 _BATCH = 20
-_MAX_CALLS = 10     # paid model: verification is the cheapest quality lever
-                    # (raised for the claim_check attribution tasks, Phase 5.5)
+_MAX_CALLS = 12     # paid model: verification is the cheapest quality lever.
+                    # Round 5: 10→12 — claims volume grew once the density
+                    # floors were enforced (209 tasks once hit the old cap
+                    # and left 9 claims unverified; full coverage is the
+                    # product feature)
 
 
 def verifier_node(state) -> dict:
     if state.get("dry_run"):
         print("[s9_verifier] DRY RUN — skipped")
         return {"verification": {}}
+    set_current_node("s9_verifier")       # Round 1: per-node telemetry
 
     # Phase 2.5: excerpts carry their document metadata — most "partial"
     # verdicts were the verifier not knowing WHICH concall/date an excerpt
@@ -61,7 +68,7 @@ def verifier_node(state) -> dict:
             ids = [i for i in c.get("evidence_ids", []) if i in ev_by_id]
             if ids:
                 tasks.append({"letter": letter, "claim": c,
-                              "evidence": [_excerpt(i) for i in ids[:3]]})
+                              "ev_ids": ids[:3]})
     # Phase 5.5: the scoreboard's ATTRIBUTIONS are verified too — does the
     # cited passage actually carry the management claim? (The verdict math
     # itself is deterministic-calc territory; the attribution is not.)
@@ -71,7 +78,7 @@ def verifier_node(state) -> dict:
             tasks.append({"letter": "D", "kind": "claim_check", "cc_index": i,
                           "claim": {"text": "Management stated: "
                                             + str(cc.get("mgmt_claim", ""))[:300]},
-                          "evidence": [_excerpt(eid)]})
+                          "ev_ids": [eid]})
     if not tasks:
         print("[s9_verifier] no evidence-cited claims to verify")
         return {"verification": {}}
@@ -83,23 +90,40 @@ def verifier_node(state) -> dict:
             print(f"  [s9] budget cap — {len(tasks)-start} claims left unverified")
             break
         batch = tasks[start:start + _BATCH]
-        user = "\n\n".join(
-            f"idx {i}\nCLAIM: {t['claim'].get('text','')}\nEVIDENCE:\n" +
-            "\n".join(f"- {x}" for x in t["evidence"])
+        # Round 2.2: excerpt dedup — claims cluster on the same passages,
+        # and the old rendering re-billed each 1200-char excerpt once per
+        # citing claim. Render every unique excerpt ONCE per batch; claims
+        # reference E<n> ids. Coverage untouched (every claim is still
+        # judged against every excerpt it cites).
+        index: dict = {}
+        for t in batch:
+            for eid in t["ev_ids"]:
+                if eid not in index:
+                    index[eid] = len(index) + 1
+        excerpts = "\n\n".join(f"[E{n}] {_excerpt(eid)}"
+                               for eid, n in index.items())
+        claims_txt = "\n\n".join(
+            f"idx {i}\nCLAIM: {t['claim'].get('text', '')}\nEVIDENCE: " +
+            ", ".join(f"E{index[eid]}" for eid in t["ev_ids"])
             for i, t in enumerate(batch))
+        user = f"EXCERPTS:\n{excerpts}\n\nCLAIMS:\n{claims_txt}"
         # 16K budget (reasoning tokens count inside max_tokens) + one
         # retry per batch: the spiral once truncated batch 1 at 4K and the
         # old break-on-first-failure left the whole report unverified.
         result = None
         for attempt in range(2):
             try:
+                from src.config import REASONING_EFFORT_VERIFY
                 result = generate_json(_SYSTEM, user, temperature=0.0,
-                                       max_tokens=16384)
+                                       max_tokens=16384,
+                                       reasoning_effort=REASONING_EFFORT_VERIFY)
                 break
             except Exception as e:
-                if attempt == 0 and "TRUNCATED" in str(e):
-                    print(f"  [s9] reasoning-spiral truncation — retrying "
+                if attempt == 0 and ("TRUNCATED" in str(e)
+                                     or "timed out" in str(e).lower()):
+                    print(f"  [s9] reasoning-spiral/timeout — retrying "
                           f"batch once")
+                    note_wasted_output("spiral")
                     continue
                 print(f"  [s9][warn] verification call failed: {e}")
         if result is None:
@@ -127,4 +151,13 @@ def verifier_node(state) -> dict:
 
     failed = sum(1 for v in verification.values() if v["verdict"] != "supported")
     print(f"[s9_verifier] {len(verification)} claims checked, {failed} not fully supported")
+    # Round 1.2: verifier trend stats ride the telemetry sidecar so the
+    # 6–16% not-fully-supported noise becomes a monitorable trend.
+    import src.llm as llm
+    by_verdict: dict = {}
+    for v in verification.values():
+        by_verdict[v["verdict"]] = by_verdict.get(v["verdict"], 0) + 1
+    llm.telemetry_extra["verifier"] = {
+        "claims_checked": len(verification), "not_fully_supported": failed,
+        "by_verdict": by_verdict, "batches": calls, "tasks_total": len(tasks)}
     return {"verification": verification}

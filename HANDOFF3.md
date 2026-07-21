@@ -167,6 +167,10 @@ cheap. Exceptions (all narrow, all stochastic-only):
    loop continues (break-on-first-failure once shipped a 0-verified
    report).
 5. CallDeadlineError (Gemini): that URL is skipped, never retried.
+6. Transport read timeout (added 2026-07-22): a generation exceeding
+   the 600s HTTP ceiling (slow-spiral shape — synth_I hit it once) is
+   retried ONCE with a fresh sample in envelope calls, verifier
+   batches, and AR bundles (bundle skipped alone if it repeats).
 
 **The M3 reasoning spiral**: the model stochastically burns the ENTIRE
 max_tokens budget inside reasoning_content (observed up to 230K chars)

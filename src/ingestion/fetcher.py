@@ -128,21 +128,6 @@ def fetch_price_history(ticker: str, company_tokens: list,
     return points, url, long_name
 
 
-def looks_like_valuation_history(doc: dict, company_tokens: list) -> bool:
-    """Validation BEFORE spending extraction on a multiple-history page:
-    (a) the text carries >=4 year->multiple pairs, AND (b) it mentions
-    THIS company. (b) is non-negotiable: wisesheets once resolved the
-    ticker 'M&M.NS' to Macy's Inc — a wrong-company page passes any
-    shape-only check and would ship another company's numbers."""
-    import re as _re
-    text = doc["text"]
-    pairs = _re.findall(r"20\d\d\D{0,15}\d{1,3}\.\d{1,2}", text)
-    if len(pairs) < 4:
-        return False
-    low = text[:20000].lower()
-    return any(t in low for t in company_tokens)
-
-
 def looks_like_presentation(doc: dict) -> bool:
     """Cheap validation BEFORE spending extraction: a real deck is a
     multi-page PDF, or a page whose text carries presentation vocabulary."""

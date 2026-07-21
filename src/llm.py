@@ -112,11 +112,87 @@ usage_totals: dict = {"gemini": {"in": 0, "out": 0},
                       "fireworks": {"in": 0, "out": 0}}
 _usage_lock = threading.Lock()
 
+# --- Round 1 per-node telemetry ---------------------------------------------
+# Node attribution is THREAD-LOCAL: the synth wave (B/E/D1/D2/D3) runs its
+# nodes on parallel threads and every LLM call is synchronous inside its
+# node's thread — a plain global would misattribute the wave's calls.
+_node_local = threading.local()
+node_usage: dict = {}       # {node_id: {calls,in,out,cached_in,latency_s,cost_usd,spirals,truncations}}
+telemetry_extra: dict = {}  # free-form per-run stats (verifier trends, ...)
 
-def _add_usage(provider: str, tokens_in: int, tokens_out: int) -> None:
+
+def set_current_node(node_id: str) -> None:
+    _node_local.node = node_id
+
+
+def current_node() -> str:
+    return getattr(_node_local, "node", "(unattributed)")
+
+
+def _node_rec(node: str) -> dict:
+    return node_usage.setdefault(node, {
+        "calls": 0, "in": 0, "out": 0, "cached_in": 0, "latency_s": 0.0,
+        "cost_usd": 0.0, "spirals": 0, "truncations": 0})
+
+
+def note_wasted_output(kind: str = "spiral") -> None:
+    """Count a burned output budget against the current node: 'spiral'
+    (reasoning spiral in an envelope/verifier call) or 'truncation' (s2
+    extraction overflow). Spiral-rate-per-node is the Round-5
+    hypothesis-test statistic."""
+    key = "spirals" if kind == "spiral" else "truncations"
+    with _usage_lock:
+        _node_rec(current_node())[key] += 1
+
+
+def _add_usage(provider: str, tokens_in: int, tokens_out: int,
+               cached_in: int = 0, latency_s: float = 0.0) -> None:
+    from src.config import FIREWORKS_COST_IN_PER_M, FIREWORKS_COST_OUT_PER_M
     with _usage_lock:
         usage_totals[provider]["in"] += int(tokens_in or 0)
         usage_totals[provider]["out"] += int(tokens_out or 0)
+        rec = _node_rec(current_node())
+        rec["calls"] += 1
+        rec["in"] += int(tokens_in or 0)
+        rec["out"] += int(tokens_out or 0)
+        rec["cached_in"] += int(cached_in or 0)
+        rec["latency_s"] += latency_s
+        if provider == "fireworks":     # only paid tokens are priced
+            rec["cost_usd"] += (int(tokens_in or 0) * FIREWORKS_COST_IN_PER_M +
+                                int(tokens_out or 0) * FIREWORKS_COST_OUT_PER_M) / 1e6
+
+
+def dump_telemetry(run_id: str = "") -> None:
+    """End-of-run per-node cost table + sidecar file. The runs table
+    stays scalar-only (DB_SCHEMA.md); the per-node breakdown lives in
+    data/telemetry/{run_id}.json."""
+    with _usage_lock:
+        snap = {n: dict(r) for n, r in node_usage.items()}
+    if not snap:
+        return
+    print("\n--- per-node telemetry (Round 1) ---")
+    print(f"{'node':<26}{'calls':>6}{'in_tok':>12}{'out_tok':>10}"
+          f"{'cached':>12}{'sec':>7}{'spir':>5}{'trunc':>6}{'cost$':>8}")
+    for n, r in sorted(snap.items(), key=lambda kv: -kv[1]["cost_usd"]):
+        print(f"{n:<26}{r['calls']:>6}{r['in']:>12,}{r['out']:>10,}"
+              f"{r['cached_in']:>12,}{r['latency_s']:>7.0f}{r['spirals']:>5}"
+              f"{r['truncations']:>6}{r['cost_usd']:>8.3f}")
+    print(f"{'TOTAL':<26}{sum(r['calls'] for r in snap.values()):>6}"
+          f"{sum(r['in'] for r in snap.values()):>12,}"
+          f"{sum(r['out'] for r in snap.values()):>10,}"
+          f"{sum(r['cached_in'] for r in snap.values()):>12,}"
+          f"{sum(r['latency_s'] for r in snap.values()):>7.0f}"
+          f"{sum(r['spirals'] for r in snap.values()):>5}"
+          f"{sum(r['truncations'] for r in snap.values()):>6}"
+          f"{sum(r['cost_usd'] for r in snap.values()):>8.3f}")
+    if run_id:
+        import os
+        os.makedirs("data/telemetry", exist_ok=True)
+        path = os.path.join("data/telemetry", f"{run_id}.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"run_id": run_id, "nodes": snap,
+                       "extra": telemetry_extra}, f, indent=1, default=str)
+        print(f"telemetry sidecar: {path}")
 
 
 def run_cost_usd() -> tuple[int, int, float]:
@@ -171,24 +247,12 @@ def _post_via_curl(cfg: dict, payload: dict) -> tuple[int, str]:
     return int(code or 0), body_text
 
 
-def _openai_generate(provider: str, system: str, user: str, temperature: float,
-                     max_tokens: int) -> str:
-    """One OpenAI-style chat call. Same policy as Gemini: throttled,
-    serialized, no model fallback — first error aborts. HTTP 429 is the
-    ONE retryable case (deterministic rate limiting, not an outage).
-    Transport falls back requests->curl for TLS-hostile network paths."""
+def _post_with_retry(provider: str, payload: dict) -> tuple[int, str, float]:
+    """Throttled, serialized POST with the documented 429 retry loop and
+    the requests→curl transport fallback. Returns (status, body,
+    latency_s of the final attempt)."""
     global calls_made
     cfg = _OPENAI_PROVIDERS[provider]
-
-    payload = {
-        "model": cfg["model"],
-        "messages": ([{"role": "system", "content": system}] if system else []) +
-                    [{"role": "user", "content": user}],
-        "max_tokens": min(max_tokens, cfg["max_out"]),
-        "temperature": temperature,
-        "top_p": 0.95,
-        "stream": False,
-    }
 
     with cfg["lock"]:       # serialize: one in-flight request per provider
         for attempt in range(4):
@@ -197,6 +261,7 @@ def _openai_generate(provider: str, system: str, user: str, temperature: float,
                 time.sleep(gap)
             cfg["last_call"] = time.monotonic()
             calls_made += 1
+            t0 = time.monotonic()
 
             status, text, retry_after = 0, "", 25.0
             if not cfg["use_curl"]:
@@ -215,6 +280,7 @@ def _openai_generate(provider: str, system: str, user: str, temperature: float,
                     raise LLMError(f"{provider} API request failed: {e}") from e
             if cfg["use_curl"]:
                 status, text = _post_via_curl(cfg, payload)
+            latency = time.monotonic() - t0
 
             if status == 429 and attempt < 3:
                 print(f"  [llm] 429 rate-limited — waiting {retry_after:.0f}s "
@@ -222,6 +288,30 @@ def _openai_generate(provider: str, system: str, user: str, temperature: float,
                 time.sleep(retry_after)
                 continue
             break
+    return status, text, latency
+
+
+def _openai_generate(provider: str, system: str, user: str, temperature: float,
+                     max_tokens: int, reasoning_effort: str = "") -> str:
+    """One OpenAI-style chat call. Same policy as Gemini: throttled,
+    serialized, no model fallback — first error aborts. HTTP 429 is the
+    ONE retryable case (deterministic rate limiting, not an outage).
+    reasoning_effort (Round 2.3, probe-verified): "" = provider default;
+    "none" disables M3 reasoning; "low"/"medium"/"high" accepted."""
+    cfg = _OPENAI_PROVIDERS[provider]
+
+    payload = {
+        "model": cfg["model"],
+        "messages": ([{"role": "system", "content": system}] if system else []) +
+                    [{"role": "user", "content": user}],
+        "max_tokens": min(max_tokens, cfg["max_out"]),
+        "temperature": temperature,
+        "top_p": 0.95,
+        "stream": False,
+    }
+    if reasoning_effort:
+        payload["reasoning_effort"] = reasoning_effort
+    status, text, latency = _post_with_retry(provider, payload)
 
     if status in (429, 503):
         raise ModelOverloadedError(
@@ -238,7 +328,9 @@ def _openai_generate(provider: str, system: str, user: str, temperature: float,
     except (KeyError, IndexError, ValueError) as e:
         raise LLMError(f"Unexpected {provider} response shape: {text[:300]}") from e
     u = data.get("usage") or {}
-    _add_usage(provider, u.get("prompt_tokens", 0), u.get("completion_tokens", 0))
+    _add_usage(provider, u.get("prompt_tokens", 0), u.get("completion_tokens", 0),
+               cached_in=(u.get("prompt_tokens_details") or {}).get("cached_tokens", 0),
+               latency_s=latency)
     # Reasoning models spend hidden thinking tokens INSIDE max_tokens —
     # a truncated envelope must fail loudly as truncation, not as a
     # mysterious JSON parse error downstream.
@@ -254,6 +346,37 @@ def _openai_generate(provider: str, system: str, user: str, temperature: float,
             f"reasoning; reasoning_content {reasoning_len} chars, visible "
             f"content truncated or absent) — raise the call's max_tokens.")
     return content
+
+
+def raw_chat(messages: list, max_tokens: int = 2048, temperature: float = 0.2,
+             extra_payload: dict | None = None,
+             provider: str = "fireworks") -> dict:
+    """Round-1 probes + Round-4 conversation extraction: one chat call
+    with a caller-built messages list (multi-turn allowed); returns the
+    FULL response JSON (usage details incl. prompt_tokens_details
+    preserved — the caching probe reads them). Same transport hardening,
+    throttle and serialization as every other call; usage is recorded
+    normally against the current node."""
+    cfg = _OPENAI_PROVIDERS[provider]
+    if not cfg["configured"]():
+        raise LLMError(f"{provider.upper()}_API_KEY is not set in .env.")
+    payload = {"model": cfg["model"], "messages": messages,
+               "max_tokens": min(max_tokens, cfg["max_out"]),
+               "temperature": temperature, "top_p": 0.95, "stream": False}
+    if extra_payload:
+        payload.update(extra_payload)
+    status, text, latency = _post_with_retry(provider, payload)
+    if status in (429, 503):
+        raise ModelOverloadedError(
+            f"{cfg['model']} is rate-limited/overloaded (HTTP {status}): {text[:300]}")
+    if status != 200:
+        raise LLMError(f"{provider} API error HTTP {status}: {text[:300]}")
+    data = json.loads(text)
+    u = data.get("usage") or {}
+    _add_usage(provider, u.get("prompt_tokens", 0), u.get("completion_tokens", 0),
+               cached_in=(u.get("prompt_tokens_details") or {}).get("cached_tokens", 0),
+               latency_s=latency)
+    return data
 
 
 def _get_client():
@@ -283,6 +406,7 @@ def _generate(contents, config):
         calls_made += 1
 
     try:
+        t0 = time.monotonic()
         response = client.models.generate_content(
             model=_active_model, contents=contents, config=config
         )
@@ -291,7 +415,8 @@ def _generate(contents, config):
             _add_usage("gemini",
                        getattr(um, "prompt_token_count", 0) or 0,
                        (getattr(um, "candidates_token_count", 0) or 0) +
-                       (getattr(um, "thoughts_token_count", 0) or 0))
+                       (getattr(um, "thoughts_token_count", 0) or 0),
+                       latency_s=time.monotonic() - t0)
         return response
     except Exception as e:
         if _is_deadline(e):
@@ -324,14 +449,16 @@ def read_urls(urls: List[str], instruction: str, json_mode: bool = False,
     return response.text or ""
 
 
-def synthesize(messages, temperature: float = 0.3, max_tokens: int = 4096) -> str:
+def synthesize(messages, temperature: float = 0.3, max_tokens: int = 4096,
+               reasoning_effort: str = "") -> str:
     """Plain text call, no tools."""
     system_parts = [m["content"] for m in messages if m["role"] == "system"]
     user_parts = [m["content"] for m in messages if m["role"] != "system"]
 
     if _synth_provider in _OPENAI_PROVIDERS:
         text = _openai_generate(_synth_provider, "\n\n".join(system_parts),
-                                "\n\n".join(user_parts), temperature, max_tokens)
+                                "\n\n".join(user_parts), temperature, max_tokens,
+                                reasoning_effort=reasoning_effort)
         if not text:
             raise LLMError(f"{_synth_provider} returned an empty response")
         return text
@@ -349,7 +476,7 @@ def synthesize(messages, temperature: float = 0.3, max_tokens: int = 4096) -> st
 
 
 def generate_json(system: str, user: str, temperature: float = 0.2,
-                  max_tokens: int = 16384) -> dict:
+                  max_tokens: int = 16384, reasoning_effort: str = "") -> dict:
     """Structured call with JSON response mime type. Parse failure raises
     LLMError (per node contract: invalid JSON = failed node run)."""
     if _synth_provider in _OPENAI_PROVIDERS:
@@ -358,7 +485,7 @@ def generate_json(system: str, user: str, temperature: float = 0.2,
             _synth_provider,
             system + "\n\nCRITICAL: output ONLY the JSON object. No prose, "
                      "no markdown fences, no reasoning preamble.",
-            user, temperature, max_tokens)
+            user, temperature, max_tokens, reasoning_effort=reasoning_effort)
         parsed = parse_json_lenient(text)
         if parsed is None:
             raise LLMError(f"{get_active_model()} returned an unparseable envelope. "

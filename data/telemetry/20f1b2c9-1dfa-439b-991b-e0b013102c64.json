@@ -1,0 +1,259 @@
+{
+ "run_id": "20f1b2c9-1dfa-439b-991b-e0b013102c64",
+ "nodes": {
+  "s2:annual_report": {
+   "calls": 2,
+   "in": 572306,
+   "out": 75474,
+   "cached_in": 863,
+   "latency_s": 326.8951206000056,
+   "cost_usd": 0.48005636,
+   "spirals": 0,
+   "truncations": 1
+  },
+  "s2:results_pdf": {
+   "calls": 1,
+   "in": 3787,
+   "out": 1749,
+   "cached_in": 0,
+   "latency_s": 9.714767299999949,
+   "cost_usd": 0.00591316,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:rating_rationale": {
+   "calls": 1,
+   "in": 702,
+   "out": 66,
+   "cached_in": 0,
+   "latency_s": 5.886253499949817,
+   "cost_usd": 0.0,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_1": {
+   "calls": 1,
+   "in": 868,
+   "out": 546,
+   "cached_in": 0,
+   "latency_s": 10.16669300000649,
+   "cost_usd": 0.00167314,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_2": {
+   "calls": 1,
+   "in": 702,
+   "out": 98,
+   "cached_in": 0,
+   "latency_s": 8.387021000031382,
+   "cost_usd": 0.0,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:litigation": {
+   "calls": 1,
+   "in": 1553,
+   "out": 1896,
+   "cached_in": 0,
+   "latency_s": 41.01897999999346,
+   "cost_usd": 0.0050063899999999995,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:macro_rates_growth": {
+   "calls": 2,
+   "in": 3222,
+   "out": 4930,
+   "cached_in": 0,
+   "latency_s": 28.324787300021853,
+   "cost_usd": 0.010213789999999999,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:macro_external": {
+   "calls": 1,
+   "in": 2111,
+   "out": 3052,
+   "cached_in": 0,
+   "latency_s": 15.521538599976338,
+   "cost_usd": 0.00784493,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:macro_fiscal_rural": {
+   "calls": 1,
+   "in": 30215,
+   "out": 3014,
+   "cached_in": 0,
+   "latency_s": 15.878097000007983,
+   "cost_usd": 0.02321891,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:macro_commodities": {
+   "calls": 1,
+   "in": 2768,
+   "out": 2804,
+   "cached_in": 0,
+   "latency_s": 13.744429900019895,
+   "cost_usd": 0.00766316,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D2": {
+   "calls": 1,
+   "in": 17609,
+   "out": 29805,
+   "cached_in": 0,
+   "latency_s": 145.21373829996446,
+   "cost_usd": 0.0749579,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_E": {
+   "calls": 1,
+   "in": 15511,
+   "out": 17919,
+   "cached_in": 0,
+   "latency_s": 137.69680260005407,
+   "cost_usd": 0.04777366,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D1": {
+   "calls": 1,
+   "in": 25071,
+   "out": 21024,
+   "cached_in": 0,
+   "latency_s": 111.27132900001016,
+   "cost_usd": 0.05983161,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_B": {
+   "calls": 1,
+   "in": 12231,
+   "out": 23024,
+   "cached_in": 0,
+   "latency_s": 310.37852939998265,
+   "cost_usd": 0.05714961,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D3": {
+   "calls": 2,
+   "in": 45480,
+   "out": 14031,
+   "cached_in": 22853,
+   "latency_s": 67.69594899995718,
+   "cost_usd": 0.05574189,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s4d_followup": {
+   "calls": 1,
+   "in": 5109,
+   "out": 1457,
+   "cached_in": 111,
+   "latency_s": 9.936864899995271,
+   "cost_usd": 0.006000780000000001,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D": {
+   "calls": 1,
+   "in": 17471,
+   "out": 9668,
+   "cached_in": 114,
+   "latency_s": 47.17398310004501,
+   "cost_usd": 0.030781970000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_F": {
+   "calls": 1,
+   "in": 36521,
+   "out": 24431,
+   "cached_in": 0,
+   "latency_s": 166.78839120001066,
+   "cost_usd": 0.07359044000000001,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_G": {
+   "calls": 1,
+   "in": 9739,
+   "out": 6173,
+   "cached_in": 0,
+   "latency_s": 32.59382910002023,
+   "cost_usd": 0.01887532,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_H": {
+   "calls": 1,
+   "in": 19622,
+   "out": 11015,
+   "cached_in": 1165,
+   "latency_s": 78.05680279998342,
+   "cost_usd": 0.03491495,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_C": {
+   "calls": 1,
+   "in": 25591,
+   "out": 18814,
+   "cached_in": 0,
+   "latency_s": 108.5684634000063,
+   "cost_usd": 0.05527771,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_I": {
+   "calls": 1,
+   "in": 14371,
+   "out": 17867,
+   "cached_in": 0,
+   "latency_s": 88.09888350003166,
+   "cost_usd": 0.047032779999999996,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_J": {
+   "calls": 1,
+   "in": 26760,
+   "out": 31388,
+   "cached_in": 0,
+   "latency_s": 131.71162550000008,
+   "cost_usd": 0.08345772,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s9_verifier": {
+   "calls": 10,
+   "in": 26737,
+   "out": 19866,
+   "cached_in": 892,
+   "latency_s": 124.53786489996128,
+   "cost_usd": 0.058211889999999995,
+   "spirals": 0,
+   "truncations": 0
+  }
+ },
+ "extra": {
+  "verifier": {
+   "claims_checked": 183,
+   "not_fully_supported": 30,
+   "by_verdict": {
+    "supported": 153,
+    "partial": 24,
+    "contradicted": 2,
+    "unsupported": 4
+   },
+   "batches": 10,
+   "tasks_total": 183
+  }
+ }
+}

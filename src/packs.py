@@ -37,6 +37,25 @@ def load_pack(pack_id: str) -> dict:
     return pack
 
 
+def sector_members(pack: dict) -> list:
+    """Round 3.1: the sector registry — every member stock of this
+    sector [{name, ticker, screener_slug}]. Names must match
+    data/seed_entities.json (entity dedup is on (name, type))."""
+    return pack.get("members") or []
+
+
+def ingest_doc(pack_id: str) -> str:
+    """Round 3.3: the sector INGESTION skill doc (trusted sources, what
+    to extract, how to analyse) — data/sector_packs/<id>.ingest.md,
+    git-versioned. Consumed by the Round-4 sector trusted-source reads;
+    empty string when the sector has none yet."""
+    path = os.path.join(PACKS_DIR, f"{pack_id}.ingest.md")
+    if not os.path.exists(path):
+        return ""
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
 def overlay(pack: dict, slot: str) -> str:
     """Overlay prose for a [[SECTOR_OVERLAY:<slot>]] slot, with the pack's
     classic-mistakes guardrails appended to every synthesis slot."""

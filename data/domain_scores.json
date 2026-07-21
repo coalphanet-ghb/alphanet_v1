@@ -13,14 +13,14 @@
   },
   "bankbazaar.com": {
     "bad": 0,
-    "ok": 1
+    "ok": 2
   },
   "bseindia.com": {
-    "bad": 4,
-    "ok": 127
+    "bad": 5,
+    "ok": 158
   },
   "business-standard.com": {
-    "bad": 4,
+    "bad": 7,
     "ok": 1
   },
   "c4scourses.in": {
@@ -29,7 +29,7 @@
   },
   "cablecommunity.com": {
     "bad": 0,
-    "ok": 6
+    "ok": 7
   },
   "careratings.com": {
     "bad": 2,
@@ -41,7 +41,7 @@
   },
   "casemine.com": {
     "bad": 0,
-    "ok": 3
+    "ok": 4
   },
   "crisil.com": {
     "bad": 1,
@@ -57,6 +57,10 @@
   },
   "dhan.co": {
     "bad": 0,
+    "ok": 4
+  },
+  "dollarrupee.in": {
+    "bad": 0,
     "ok": 1
   },
   "easemoney.in": {
@@ -65,13 +69,17 @@
   },
   "economictimes.indiatimes.com": {
     "bad": 0,
-    "ok": 21
+    "ok": 27
   },
   "electronicsera.in": {
     "bad": 0,
     "ok": 3
   },
   "emergingmanufacturing.com": {
+    "bad": 0,
+    "ok": 2
+  },
+  "en.wikipedia.org": {
     "bad": 0,
     "ok": 1
   },
@@ -89,23 +97,35 @@
   },
   "financialexpress.com": {
     "bad": 0,
-    "ok": 10
+    "ok": 12
+  },
+  "fortuneindia.com": {
+    "bad": 0,
+    "ok": 1
   },
   "forum.valuepickr.com": {
     "bad": 0,
-    "ok": 4
+    "ok": 5
   },
   "goldenpi.com": {
     "bad": 0,
     "ok": 1
   },
+  "goodreturns.in": {
+    "bad": 0,
+    "ok": 1
+  },
   "groww.in": {
     "bad": 0,
-    "ok": 6
+    "ok": 7
   },
   "in.investing.com": {
     "bad": 0,
     "ok": 1
+  },
+  "indiabudget.gov.in": {
+    "bad": 1,
+    "ok": 0
   },
   "indianexpress.com": {
     "bad": 0,
@@ -113,10 +133,10 @@
   },
   "indiankanoon.org": {
     "bad": 0,
-    "ok": 4
+    "ok": 5
   },
   "indiaratings.co.in": {
-    "bad": 1,
+    "bad": 2,
     "ok": 0
   },
   "indiatoday.in": {
@@ -137,11 +157,15 @@
   },
   "livemint.com": {
     "bad": 0,
-    "ok": 3
+    "ok": 4
   },
   "mahindra.com": {
     "bad": 0,
     "ok": 1
+  },
+  "mausam.imd.gov.in": {
+    "bad": 1,
+    "ok": 0
   },
   "mmindia.co.in": {
     "bad": 0,
@@ -149,7 +173,11 @@
   },
   "moneycontrol.com": {
     "bad": 1,
-    "ok": 10
+    "ok": 12
+  },
+  "mospi.gov.in": {
+    "bad": 0,
+    "ok": 1
   },
   "mycarhelpline.com": {
     "bad": 0,
@@ -157,11 +185,19 @@
   },
   "ndtv.com": {
     "bad": 0,
+    "ok": 2
+  },
+  "newindianexpress.com": {
+    "bad": 0,
     "ok": 1
   },
   "newprojectstracker.com": {
     "bad": 0,
     "ok": 1
+  },
+  "news.google.com": {
+    "bad": 1,
+    "ok": 0
   },
   "news18.com": {
     "bad": 0,
@@ -179,13 +215,17 @@
     "bad": 0,
     "ok": 1
   },
+  "pib.gov.in": {
+    "bad": 0,
+    "ok": 1
+  },
   "pmedrive.heavyindustries.gov.in": {
     "bad": 0,
     "ok": 1
   },
   "query1.finance.yahoo.com": {
     "bad": 0,
-    "ok": 4
+    "ok": 6
   },
   "renewablemirror.com": {
     "bad": 0,
@@ -193,15 +233,15 @@
   },
   "sahi.com": {
     "bad": 0,
-    "ok": 12
+    "ok": 13
   },
   "scanx.trade": {
     "bad": 0,
-    "ok": 10
+    "ok": 11
   },
   "screener.in": {
     "bad": 0,
-    "ok": 148
+    "ok": 160
   },
   "siam.in": {
     "bad": 0,
@@ -209,7 +249,7 @@
   },
   "simplywall.st": {
     "bad": 0,
-    "ok": 1
+    "ok": 4
   },
   "smart-investing.in": {
     "bad": 0,
@@ -217,15 +257,19 @@
   },
   "sonacomstar.com": {
     "bad": 0,
-    "ok": 1
+    "ok": 4
   },
   "spinny.com": {
     "bad": 0,
     "ok": 1
   },
+  "steelonthenet.com": {
+    "bad": 0,
+    "ok": 1
+  },
   "stockezee.com": {
     "bad": 0,
-    "ok": 4
+    "ok": 5
   },
   "theglobeandmail.com": {
     "bad": 0,
@@ -237,15 +281,15 @@
   },
   "tickertape.in": {
     "bad": 0,
-    "ok": 9
+    "ok": 11
   },
   "tijorifinance.com": {
     "bad": 0,
-    "ok": 9
+    "ok": 10
   },
   "timesofindia.indiatimes.com": {
     "bad": 0,
-    "ok": 3
+    "ok": 4
   },
   "tipranks.com": {
     "bad": 0,
@@ -253,7 +297,7 @@
   },
   "tradebrains.in": {
     "bad": 0,
-    "ok": 3
+    "ok": 5
   },
   "tradingview.com": {
     "bad": 0,
@@ -261,7 +305,11 @@
   },
   "trendlyne.com": {
     "bad": 5,
-    "ok": 25
+    "ok": 30
+  },
+  "uk.finance.yahoo.com": {
+    "bad": 0,
+    "ok": 1
   },
   "valueresearchonline.com": {
     "bad": 0,
@@ -269,7 +317,7 @@
   },
   "whalesbook.com": {
     "bad": 0,
-    "ok": 10
+    "ok": 11
   },
   "wisesheets.io": {
     "bad": 0,
