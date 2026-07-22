@@ -1,0 +1,1207 @@
+{
+ "index": "NIFTY Midcap 150",
+ "as_of": "2026-07-22",
+ "source": "niftyindices.com ind_niftymidcap150list.csv",
+ "companies": [
+  {
+   "name": "360 ONE WAM Ltd.",
+   "ticker": "360ONE",
+   "screener_slug": "360ONE",
+   "nse_industry": "Financial Services",
+   "isin": "INE466L01038",
+   "pack_id": null
+  },
+  {
+   "name": "3M India Ltd.",
+   "ticker": "3MINDIA",
+   "screener_slug": "3MINDIA",
+   "nse_industry": "Diversified",
+   "isin": "INE470A01017",
+   "pack_id": null
+  },
+  {
+   "name": "ACC Ltd.",
+   "ticker": "ACC",
+   "screener_slug": "ACC",
+   "nse_industry": "Construction Materials",
+   "isin": "INE012A01025",
+   "pack_id": null
+  },
+  {
+   "name": "AIA Engineering Ltd.",
+   "ticker": "AIAENG",
+   "screener_slug": "AIAENG",
+   "nse_industry": "Capital Goods",
+   "isin": "INE212H01026",
+   "pack_id": null
+  },
+  {
+   "name": "APL Apollo Tubes Ltd.",
+   "ticker": "APLAPOLLO",
+   "screener_slug": "APLAPOLLO",
+   "nse_industry": "Capital Goods",
+   "isin": "INE702C01027",
+   "pack_id": null
+  },
+  {
+   "name": "AU Small Finance Bank Ltd.",
+   "ticker": "AUBANK",
+   "screener_slug": "AUBANK",
+   "nse_industry": "Financial Services",
+   "isin": "INE949L01017",
+   "pack_id": null
+  },
+  {
+   "name": "AWL Agri Business Ltd.",
+   "ticker": "AWL",
+   "screener_slug": "AWL",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE699H01024",
+   "pack_id": null
+  },
+  {
+   "name": "Abbott India Ltd.",
+   "ticker": "ABBOTINDIA",
+   "screener_slug": "ABBOTINDIA",
+   "nse_industry": "Healthcare",
+   "isin": "INE358A01014",
+   "pack_id": null
+  },
+  {
+   "name": "Adani Total Gas Ltd.",
+   "ticker": "ATGL",
+   "screener_slug": "ATGL",
+   "nse_industry": "Oil Gas & Consumable Fuels",
+   "isin": "INE399L01023",
+   "pack_id": null
+  },
+  {
+   "name": "Aditya Birla Capital Ltd.",
+   "ticker": "ABCAPITAL",
+   "screener_slug": "ABCAPITAL",
+   "nse_industry": "Financial Services",
+   "isin": "INE674K01013",
+   "pack_id": null
+  },
+  {
+   "name": "Ajanta Pharmaceuticals Ltd.",
+   "ticker": "AJANTPHARM",
+   "screener_slug": "AJANTPHARM",
+   "nse_industry": "Healthcare",
+   "isin": "INE031B01049",
+   "pack_id": null
+  },
+  {
+   "name": "Alkem Laboratories Ltd.",
+   "ticker": "ALKEM",
+   "screener_slug": "ALKEM",
+   "nse_industry": "Healthcare",
+   "isin": "INE540L01014",
+   "pack_id": null
+  },
+  {
+   "name": "Anthem Biosciences Ltd.",
+   "ticker": "ANTHEM",
+   "screener_slug": "ANTHEM",
+   "nse_industry": "Healthcare",
+   "isin": "INE0CZ201020",
+   "pack_id": null
+  },
+  {
+   "name": "Apar Industries Ltd.",
+   "ticker": "APARINDS",
+   "screener_slug": "APARINDS",
+   "nse_industry": "Capital Goods",
+   "isin": "INE372A01015",
+   "pack_id": null
+  },
+  {
+   "name": "Apollo Tyres Ltd.",
+   "ticker": "APOLLOTYRE",
+   "screener_slug": "APOLLOTYRE",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE438A01022",
+   "pack_id": null
+  },
+  {
+   "name": "Ashok Leyland Ltd.",
+   "ticker": "ASHOKLEY",
+   "screener_slug": "ASHOKLEY",
+   "nse_industry": "Capital Goods",
+   "isin": "INE208A01029",
+   "pack_id": null
+  },
+  {
+   "name": "Astral Ltd.",
+   "ticker": "ASTRAL",
+   "screener_slug": "ASTRAL",
+   "nse_industry": "Capital Goods",
+   "isin": "INE006I01046",
+   "pack_id": null
+  },
+  {
+   "name": "Aurobindo Pharma Ltd.",
+   "ticker": "AUROPHARMA",
+   "screener_slug": "AUROPHARMA",
+   "nse_industry": "Healthcare",
+   "isin": "INE406A01037",
+   "pack_id": null
+  },
+  {
+   "name": "Authum Investment & Infrastructure Ltd.",
+   "ticker": "AIIL",
+   "screener_slug": "AIIL",
+   "nse_industry": "Financial Services",
+   "isin": "INE206F01022",
+   "pack_id": null
+  },
+  {
+   "name": "BSE Ltd.",
+   "ticker": "BSE",
+   "screener_slug": "BSE",
+   "nse_industry": "Financial Services",
+   "isin": "INE118H01025",
+   "pack_id": null
+  },
+  {
+   "name": "Bajaj Housing Finance Ltd.",
+   "ticker": "BAJAJHFL",
+   "screener_slug": "BAJAJHFL",
+   "nse_industry": "Financial Services",
+   "isin": "INE377Y01014",
+   "pack_id": null
+  },
+  {
+   "name": "Balkrishna Industries Ltd.",
+   "ticker": "BALKRISIND",
+   "screener_slug": "BALKRISIND",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE787D01026",
+   "pack_id": null
+  },
+  {
+   "name": "Bank of India",
+   "ticker": "BANKINDIA",
+   "screener_slug": "BANKINDIA",
+   "nse_industry": "Financial Services",
+   "isin": "INE084A01016",
+   "pack_id": null
+  },
+  {
+   "name": "Bank of Maharashtra",
+   "ticker": "MAHABANK",
+   "screener_slug": "MAHABANK",
+   "nse_industry": "Financial Services",
+   "isin": "INE457A01014",
+   "pack_id": null
+  },
+  {
+   "name": "Berger Paints India Ltd.",
+   "ticker": "BERGEPAINT",
+   "screener_slug": "BERGEPAINT",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE463A01038",
+   "pack_id": null
+  },
+  {
+   "name": "Bharat Dynamics Ltd.",
+   "ticker": "BDL",
+   "screener_slug": "BDL",
+   "nse_industry": "Capital Goods",
+   "isin": "INE171Z01026",
+   "pack_id": null
+  },
+  {
+   "name": "Bharat Forge Ltd.",
+   "ticker": "BHARATFORG",
+   "screener_slug": "BHARATFORG",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE465A01025",
+   "pack_id": null
+  },
+  {
+   "name": "Bharat Heavy Electricals Ltd.",
+   "ticker": "BHEL",
+   "screener_slug": "BHEL",
+   "nse_industry": "Capital Goods",
+   "isin": "INE257A01026",
+   "pack_id": null
+  },
+  {
+   "name": "Bharti Hexacom Ltd.",
+   "ticker": "BHARTIHEXA",
+   "screener_slug": "BHARTIHEXA",
+   "nse_industry": "Telecommunication",
+   "isin": "INE343G01021",
+   "pack_id": null
+  },
+  {
+   "name": "Billionbrains Garage Ventures Ltd.",
+   "ticker": "GROWW",
+   "screener_slug": "GROWW",
+   "nse_industry": "Financial Services",
+   "isin": "INE0HOQ01053",
+   "pack_id": null
+  },
+  {
+   "name": "Biocon Ltd.",
+   "ticker": "BIOCON",
+   "screener_slug": "BIOCON",
+   "nse_industry": "Healthcare",
+   "isin": "INE376G01013",
+   "pack_id": null
+  },
+  {
+   "name": "Blue Star Ltd.",
+   "ticker": "BLUESTARCO",
+   "screener_slug": "BLUESTARCO",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE472A01039",
+   "pack_id": null
+  },
+  {
+   "name": "CRISIL Ltd.",
+   "ticker": "CRISIL",
+   "screener_slug": "CRISIL",
+   "nse_industry": "Financial Services",
+   "isin": "INE007A01025",
+   "pack_id": null
+  },
+  {
+   "name": "Cochin Shipyard Ltd.",
+   "ticker": "COCHINSHIP",
+   "screener_slug": "COCHINSHIP",
+   "nse_industry": "Capital Goods",
+   "isin": "INE704P01025",
+   "pack_id": null
+  },
+  {
+   "name": "Coforge Ltd.",
+   "ticker": "COFORGE",
+   "screener_slug": "COFORGE",
+   "nse_industry": "Information Technology",
+   "isin": "INE591G01025",
+   "pack_id": null
+  },
+  {
+   "name": "Colgate Palmolive (India) Ltd.",
+   "ticker": "COLPAL",
+   "screener_slug": "COLPAL",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE259A01022",
+   "pack_id": null
+  },
+  {
+   "name": "Container Corporation of India Ltd.",
+   "ticker": "CONCOR",
+   "screener_slug": "CONCOR",
+   "nse_industry": "Services",
+   "isin": "INE111A01025",
+   "pack_id": null
+  },
+  {
+   "name": "Coromandel International Ltd.",
+   "ticker": "COROMANDEL",
+   "screener_slug": "COROMANDEL",
+   "nse_industry": "Chemicals",
+   "isin": "INE169A01031",
+   "pack_id": null
+  },
+  {
+   "name": "Dabur India Ltd.",
+   "ticker": "DABUR",
+   "screener_slug": "DABUR",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE016A01026",
+   "pack_id": null
+  },
+  {
+   "name": "Dalmia Bharat Ltd.",
+   "ticker": "DALBHARAT",
+   "screener_slug": "DALBHARAT",
+   "nse_industry": "Construction Materials",
+   "isin": "INE00R701025",
+   "pack_id": null
+  },
+  {
+   "name": "Dixon Technologies (India) Ltd.",
+   "ticker": "DIXON",
+   "screener_slug": "DIXON",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE935N01020",
+   "pack_id": null
+  },
+  {
+   "name": "Endurance Technologies Ltd.",
+   "ticker": "ENDURANCE",
+   "screener_slug": "ENDURANCE",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE913H01037",
+   "pack_id": null
+  },
+  {
+   "name": "Escorts Kubota Ltd.",
+   "ticker": "ESCORTS",
+   "screener_slug": "ESCORTS",
+   "nse_industry": "Capital Goods",
+   "isin": "INE042A01014",
+   "pack_id": null
+  },
+  {
+   "name": "Exide Industries Ltd.",
+   "ticker": "EXIDEIND",
+   "screener_slug": "EXIDEIND",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE302A01020",
+   "pack_id": null
+  },
+  {
+   "name": "FSN E-Commerce Ventures Ltd.",
+   "ticker": "NYKAA",
+   "screener_slug": "NYKAA",
+   "nse_industry": "Consumer Services",
+   "isin": "INE388Y01029",
+   "pack_id": null
+  },
+  {
+   "name": "Federal Bank Ltd.",
+   "ticker": "FEDERALBNK",
+   "screener_slug": "FEDERALBNK",
+   "nse_industry": "Financial Services",
+   "isin": "INE171A01029",
+   "pack_id": null
+  },
+  {
+   "name": "Fortis Healthcare Ltd.",
+   "ticker": "FORTIS",
+   "screener_slug": "FORTIS",
+   "nse_industry": "Healthcare",
+   "isin": "INE061F01013",
+   "pack_id": null
+  },
+  {
+   "name": "GE Vernova T&D India Ltd.",
+   "ticker": "GVT&D",
+   "screener_slug": "GVT%26D",
+   "nse_industry": "Capital Goods",
+   "isin": "INE200A01026",
+   "pack_id": null
+  },
+  {
+   "name": "GMR Airports Ltd.",
+   "ticker": "GMRAIRPORT",
+   "screener_slug": "GMRAIRPORT",
+   "nse_industry": "Services",
+   "isin": "INE776C01039",
+   "pack_id": null
+  },
+  {
+   "name": "General Insurance Corporation of India",
+   "ticker": "GICRE",
+   "screener_slug": "GICRE",
+   "nse_industry": "Financial Services",
+   "isin": "INE481Y01014",
+   "pack_id": null
+  },
+  {
+   "name": "Glaxosmithkline Pharmaceuticals Ltd.",
+   "ticker": "GLAXO",
+   "screener_slug": "GLAXO",
+   "nse_industry": "Healthcare",
+   "isin": "INE159A01016",
+   "pack_id": null
+  },
+  {
+   "name": "Glenmark Pharmaceuticals Ltd.",
+   "ticker": "GLENMARK",
+   "screener_slug": "GLENMARK",
+   "nse_industry": "Healthcare",
+   "isin": "INE935A01035",
+   "pack_id": null
+  },
+  {
+   "name": "Global Health Ltd.",
+   "ticker": "MEDANTA",
+   "screener_slug": "MEDANTA",
+   "nse_industry": "Healthcare",
+   "isin": "INE474Q01031",
+   "pack_id": null
+  },
+  {
+   "name": "Godfrey Phillips India Ltd.",
+   "ticker": "GODFRYPHLP",
+   "screener_slug": "GODFRYPHLP",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE260B01028",
+   "pack_id": null
+  },
+  {
+   "name": "Godrej Industries Ltd.",
+   "ticker": "GODREJIND",
+   "screener_slug": "GODREJIND",
+   "nse_industry": "Diversified",
+   "isin": "INE233A01035",
+   "pack_id": null
+  },
+  {
+   "name": "Godrej Properties Ltd.",
+   "ticker": "GODREJPROP",
+   "screener_slug": "GODREJPROP",
+   "nse_industry": "Realty",
+   "isin": "INE484J01027",
+   "pack_id": null
+  },
+  {
+   "name": "Gujarat Fluorochemicals Ltd.",
+   "ticker": "FLUOROCHEM",
+   "screener_slug": "FLUOROCHEM",
+   "nse_industry": "Chemicals",
+   "isin": "INE09N301011",
+   "pack_id": null
+  },
+  {
+   "name": "HDB Financial Services Ltd.",
+   "ticker": "HDBFS",
+   "screener_slug": "HDBFS",
+   "nse_industry": "Financial Services",
+   "isin": "INE756I01012",
+   "pack_id": null
+  },
+  {
+   "name": "Havells India Ltd.",
+   "ticker": "HAVELLS",
+   "screener_slug": "HAVELLS",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE176B01034",
+   "pack_id": null
+  },
+  {
+   "name": "Hero MotoCorp Ltd.",
+   "ticker": "HEROMOTOCO",
+   "screener_slug": "HEROMOTOCO",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE158A01026",
+   "pack_id": null
+  },
+  {
+   "name": "Hexaware Technologies Ltd.",
+   "ticker": "HEXT",
+   "screener_slug": "HEXT",
+   "nse_industry": "Information Technology",
+   "isin": "INE093A01041",
+   "pack_id": null
+  },
+  {
+   "name": "Hindustan Petroleum Corporation Ltd.",
+   "ticker": "HINDPETRO",
+   "screener_slug": "HINDPETRO",
+   "nse_industry": "Oil Gas & Consumable Fuels",
+   "isin": "INE094A01015",
+   "pack_id": null
+  },
+  {
+   "name": "Hitachi Energy India Ltd.",
+   "ticker": "POWERINDIA",
+   "screener_slug": "POWERINDIA",
+   "nse_industry": "Capital Goods",
+   "isin": "INE07Y701011",
+   "pack_id": null
+  },
+  {
+   "name": "Honeywell Automation India Ltd.",
+   "ticker": "HONAUT",
+   "screener_slug": "HONAUT",
+   "nse_industry": "Capital Goods",
+   "isin": "INE671A01010",
+   "pack_id": null
+  },
+  {
+   "name": "Housing & Urban Development Corporation Ltd.",
+   "ticker": "HUDCO",
+   "screener_slug": "HUDCO",
+   "nse_industry": "Financial Services",
+   "isin": "INE031A01017",
+   "pack_id": null
+  },
+  {
+   "name": "ICICI Lombard General Insurance Company Ltd.",
+   "ticker": "ICICIGI",
+   "screener_slug": "ICICIGI",
+   "nse_industry": "Financial Services",
+   "isin": "INE765G01017",
+   "pack_id": null
+  },
+  {
+   "name": "ICICI Prudential Asset Management Company Ltd.",
+   "ticker": "ICICIAMC",
+   "screener_slug": "ICICIAMC",
+   "nse_industry": "Financial Services",
+   "isin": "INE346A01027",
+   "pack_id": null
+  },
+  {
+   "name": "ICICI Prudential Life Insurance Company Ltd.",
+   "ticker": "ICICIPRULI",
+   "screener_slug": "ICICIPRULI",
+   "nse_industry": "Financial Services",
+   "isin": "INE726G01019",
+   "pack_id": null
+  },
+  {
+   "name": "IDFC First Bank Ltd.",
+   "ticker": "IDFCFIRSTB",
+   "screener_slug": "IDFCFIRSTB",
+   "nse_industry": "Financial Services",
+   "isin": "INE092T01019",
+   "pack_id": null
+  },
+  {
+   "name": "ITC Hotels Ltd.",
+   "ticker": "ITCHOTELS",
+   "screener_slug": "ITCHOTELS",
+   "nse_industry": "Consumer Services",
+   "isin": "INE379A01028",
+   "pack_id": null
+  },
+  {
+   "name": "Indian Bank",
+   "ticker": "INDIANB",
+   "screener_slug": "INDIANB",
+   "nse_industry": "Financial Services",
+   "isin": "INE562A01011",
+   "pack_id": null
+  },
+  {
+   "name": "Indian Railway Catering And Tourism Corporation Ltd.",
+   "ticker": "IRCTC",
+   "screener_slug": "IRCTC",
+   "nse_industry": "Consumer Services",
+   "isin": "INE335Y01020",
+   "pack_id": null
+  },
+  {
+   "name": "Indian Renewable Energy Development Agency Ltd.",
+   "ticker": "IREDA",
+   "screener_slug": "IREDA",
+   "nse_industry": "Financial Services",
+   "isin": "INE202E01016",
+   "pack_id": null
+  },
+  {
+   "name": "Indus Towers Ltd.",
+   "ticker": "INDUSTOWER",
+   "screener_slug": "INDUSTOWER",
+   "nse_industry": "Telecommunication",
+   "isin": "INE121J01017",
+   "pack_id": null
+  },
+  {
+   "name": "IndusInd Bank Ltd.",
+   "ticker": "INDUSINDBK",
+   "screener_slug": "INDUSINDBK",
+   "nse_industry": "Financial Services",
+   "isin": "INE095A01012",
+   "pack_id": null
+  },
+  {
+   "name": "Info Edge (India) Ltd.",
+   "ticker": "NAUKRI",
+   "screener_slug": "NAUKRI",
+   "nse_industry": "Consumer Services",
+   "isin": "INE663F01032",
+   "pack_id": null
+  },
+  {
+   "name": "Ipca Laboratories Ltd.",
+   "ticker": "IPCALAB",
+   "screener_slug": "IPCALAB",
+   "nse_industry": "Healthcare",
+   "isin": "INE571A01038",
+   "pack_id": null
+  },
+  {
+   "name": "J.K. Cement Ltd.",
+   "ticker": "JKCEMENT",
+   "screener_slug": "JKCEMENT",
+   "nse_industry": "Construction Materials",
+   "isin": "INE823G01014",
+   "pack_id": null
+  },
+  {
+   "name": "JSW Energy Ltd.",
+   "ticker": "JSWENERGY",
+   "screener_slug": "JSWENERGY",
+   "nse_industry": "Power",
+   "isin": "INE121E01018",
+   "pack_id": null
+  },
+  {
+   "name": "JSW Infrastructure Ltd.",
+   "ticker": "JSWINFRA",
+   "screener_slug": "JSWINFRA",
+   "nse_industry": "Services",
+   "isin": "INE880J01026",
+   "pack_id": null
+  },
+  {
+   "name": "Jindal Stainless Ltd.",
+   "ticker": "JSL",
+   "screener_slug": "JSL",
+   "nse_industry": "Metals & Mining",
+   "isin": "INE220G01021",
+   "pack_id": null
+  },
+  {
+   "name": "Jubilant Foodworks Ltd.",
+   "ticker": "JUBLFOOD",
+   "screener_slug": "JUBLFOOD",
+   "nse_industry": "Consumer Services",
+   "isin": "INE797F01020",
+   "pack_id": null
+  },
+  {
+   "name": "K.P.R. Mill Ltd.",
+   "ticker": "KPRMILL",
+   "screener_slug": "KPRMILL",
+   "nse_industry": "Textiles",
+   "isin": "INE930H01031",
+   "pack_id": null
+  },
+  {
+   "name": "KEI Industries Ltd.",
+   "ticker": "KEI",
+   "screener_slug": "KEI",
+   "nse_industry": "Capital Goods",
+   "isin": "INE878B01027",
+   "pack_id": null
+  },
+  {
+   "name": "KPIT Technologies Ltd.",
+   "ticker": "KPITTECH",
+   "screener_slug": "KPITTECH",
+   "nse_industry": "Information Technology",
+   "isin": "INE04I401011",
+   "pack_id": null
+  },
+  {
+   "name": "Kalyan Jewellers India Ltd.",
+   "ticker": "KALYANKJIL",
+   "screener_slug": "KALYANKJIL",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE303R01014",
+   "pack_id": null
+  },
+  {
+   "name": "L&T Finance Ltd.",
+   "ticker": "LTF",
+   "screener_slug": "LTF",
+   "nse_industry": "Financial Services",
+   "isin": "INE498L01015",
+   "pack_id": null
+  },
+  {
+   "name": "L&T Technology Services Ltd.",
+   "ticker": "LTTS",
+   "screener_slug": "LTTS",
+   "nse_industry": "Information Technology",
+   "isin": "INE010V01017",
+   "pack_id": null
+  },
+  {
+   "name": "LG Electronics India Ltd.",
+   "ticker": "LGEINDIA",
+   "screener_slug": "LGEINDIA",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE324D01010",
+   "pack_id": null
+  },
+  {
+   "name": "LIC Housing Finance Ltd.",
+   "ticker": "LICHSGFIN",
+   "screener_slug": "LICHSGFIN",
+   "nse_industry": "Financial Services",
+   "isin": "INE115A01026",
+   "pack_id": null
+  },
+  {
+   "name": "Laurus Labs Ltd.",
+   "ticker": "LAURUSLABS",
+   "screener_slug": "LAURUSLABS",
+   "nse_industry": "Healthcare",
+   "isin": "INE947Q01028",
+   "pack_id": null
+  },
+  {
+   "name": "Lenskart Solutions Ltd.",
+   "ticker": "LENSKART",
+   "screener_slug": "LENSKART",
+   "nse_industry": "Consumer Services",
+   "isin": "INE956O01016",
+   "pack_id": null
+  },
+  {
+   "name": "Life Insurance Corporation of India",
+   "ticker": "LICI",
+   "screener_slug": "LICI",
+   "nse_industry": "Financial Services",
+   "isin": "INE0J1Y01017",
+   "pack_id": null
+  },
+  {
+   "name": "Linde India Ltd.",
+   "ticker": "LINDEINDIA",
+   "screener_slug": "LINDEINDIA",
+   "nse_industry": "Chemicals",
+   "isin": "INE473A01011",
+   "pack_id": null
+  },
+  {
+   "name": "Lloyds Metals And Energy Ltd.",
+   "ticker": "LLOYDSME",
+   "screener_slug": "LLOYDSME",
+   "nse_industry": "Metals & Mining",
+   "isin": "INE281B01032",
+   "pack_id": null
+  },
+  {
+   "name": "Lupin Ltd.",
+   "ticker": "LUPIN",
+   "screener_slug": "LUPIN",
+   "nse_industry": "Healthcare",
+   "isin": "INE326A01037",
+   "pack_id": null
+  },
+  {
+   "name": "MRF Ltd.",
+   "ticker": "MRF",
+   "screener_slug": "MRF",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE883A01011",
+   "pack_id": null
+  },
+  {
+   "name": "Mahindra & Mahindra Financial Services Ltd.",
+   "ticker": "M&MFIN",
+   "screener_slug": "M%26MFIN",
+   "nse_industry": "Financial Services",
+   "isin": "INE774D01024",
+   "pack_id": null
+  },
+  {
+   "name": "Mankind Pharma Ltd.",
+   "ticker": "MANKIND",
+   "screener_slug": "MANKIND",
+   "nse_industry": "Healthcare",
+   "isin": "INE634S01028",
+   "pack_id": null
+  },
+  {
+   "name": "Marico Ltd.",
+   "ticker": "MARICO",
+   "screener_slug": "MARICO",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE196A01026",
+   "pack_id": null
+  },
+  {
+   "name": "Max Financial Services Ltd.",
+   "ticker": "MFSL",
+   "screener_slug": "MFSL",
+   "nse_industry": "Financial Services",
+   "isin": "INE180A01020",
+   "pack_id": null
+  },
+  {
+   "name": "Motilal Oswal Financial Services Ltd.",
+   "ticker": "MOTILALOFS",
+   "screener_slug": "MOTILALOFS",
+   "nse_industry": "Financial Services",
+   "isin": "INE338I01027",
+   "pack_id": null
+  },
+  {
+   "name": "MphasiS Ltd.",
+   "ticker": "MPHASIS",
+   "screener_slug": "MPHASIS",
+   "nse_industry": "Information Technology",
+   "isin": "INE356A01018",
+   "pack_id": null
+  },
+  {
+   "name": "Multi Commodity Exchange of India Ltd.",
+   "ticker": "MCX",
+   "screener_slug": "MCX",
+   "nse_industry": "Financial Services",
+   "isin": "INE745G01043",
+   "pack_id": null
+  },
+  {
+   "name": "NHPC Ltd.",
+   "ticker": "NHPC",
+   "screener_slug": "NHPC",
+   "nse_industry": "Power",
+   "isin": "INE848E01016",
+   "pack_id": null
+  },
+  {
+   "name": "NLC India Ltd.",
+   "ticker": "NLCINDIA",
+   "screener_slug": "NLCINDIA",
+   "nse_industry": "Power",
+   "isin": "INE589A01014",
+   "pack_id": null
+  },
+  {
+   "name": "NMDC Ltd.",
+   "ticker": "NMDC",
+   "screener_slug": "NMDC",
+   "nse_industry": "Metals & Mining",
+   "isin": "INE584A01023",
+   "pack_id": null
+  },
+  {
+   "name": "NTPC Green Energy Ltd.",
+   "ticker": "NTPCGREEN",
+   "screener_slug": "NTPCGREEN",
+   "nse_industry": "Power",
+   "isin": "INE0ONG01011",
+   "pack_id": null
+  },
+  {
+   "name": "National Aluminium Co. Ltd.",
+   "ticker": "NATIONALUM",
+   "screener_slug": "NATIONALUM",
+   "nse_industry": "Metals & Mining",
+   "isin": "INE139A01034",
+   "pack_id": null
+  },
+  {
+   "name": "Nippon Life India Asset Management Ltd.",
+   "ticker": "NAM-INDIA",
+   "screener_slug": "NAM-INDIA",
+   "nse_industry": "Financial Services",
+   "isin": "INE298J01013",
+   "pack_id": null
+  },
+  {
+   "name": "Oberoi Realty Ltd.",
+   "ticker": "OBEROIRLTY",
+   "screener_slug": "OBEROIRLTY",
+   "nse_industry": "Realty",
+   "isin": "INE093I01010",
+   "pack_id": null
+  },
+  {
+   "name": "Oil India Ltd.",
+   "ticker": "OIL",
+   "screener_slug": "OIL",
+   "nse_industry": "Oil Gas & Consumable Fuels",
+   "isin": "INE274J01014",
+   "pack_id": null
+  },
+  {
+   "name": "One 97 Communications Ltd.",
+   "ticker": "PAYTM",
+   "screener_slug": "PAYTM",
+   "nse_industry": "Financial Services",
+   "isin": "INE982J01020",
+   "pack_id": null
+  },
+  {
+   "name": "Oracle Financial Services Software Ltd.",
+   "ticker": "OFSS",
+   "screener_slug": "OFSS",
+   "nse_industry": "Information Technology",
+   "isin": "INE881D01027",
+   "pack_id": null
+  },
+  {
+   "name": "PB Fintech Ltd.",
+   "ticker": "POLICYBZR",
+   "screener_slug": "POLICYBZR",
+   "nse_industry": "Financial Services",
+   "isin": "INE417T01026",
+   "pack_id": null
+  },
+  {
+   "name": "PI Industries Ltd.",
+   "ticker": "PIIND",
+   "screener_slug": "PIIND",
+   "nse_industry": "Chemicals",
+   "isin": "INE603J01030",
+   "pack_id": null
+  },
+  {
+   "name": "Page Industries Ltd.",
+   "ticker": "PAGEIND",
+   "screener_slug": "PAGEIND",
+   "nse_industry": "Textiles",
+   "isin": "INE761H01022",
+   "pack_id": null
+  },
+  {
+   "name": "Patanjali Foods Ltd.",
+   "ticker": "PATANJALI",
+   "screener_slug": "PATANJALI",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE619A01035",
+   "pack_id": null
+  },
+  {
+   "name": "Persistent Systems Ltd.",
+   "ticker": "PERSISTENT",
+   "screener_slug": "PERSISTENT",
+   "nse_industry": "Information Technology",
+   "isin": "INE262H01021",
+   "pack_id": null
+  },
+  {
+   "name": "Petronet LNG Ltd.",
+   "ticker": "PETRONET",
+   "screener_slug": "PETRONET",
+   "nse_industry": "Oil Gas & Consumable Fuels",
+   "isin": "INE347G01014",
+   "pack_id": null
+  },
+  {
+   "name": "Phoenix Mills Ltd.",
+   "ticker": "PHOENIXLTD",
+   "screener_slug": "PHOENIXLTD",
+   "nse_industry": "Realty",
+   "isin": "INE211B01039",
+   "pack_id": null
+  },
+  {
+   "name": "Polycab India Ltd.",
+   "ticker": "POLYCAB",
+   "screener_slug": "POLYCAB",
+   "nse_industry": "Capital Goods",
+   "isin": "INE455K01017",
+   "pack_id": null
+  },
+  {
+   "name": "Premier Energies Ltd.",
+   "ticker": "PREMIERENE",
+   "screener_slug": "PREMIERENE",
+   "nse_industry": "Capital Goods",
+   "isin": "INE0BS701011",
+   "pack_id": null
+  },
+  {
+   "name": "Prestige Estates Projects Ltd.",
+   "ticker": "PRESTIGE",
+   "screener_slug": "PRESTIGE",
+   "nse_industry": "Realty",
+   "isin": "INE811K01011",
+   "pack_id": null
+  },
+  {
+   "name": "Radico Khaitan Ltd",
+   "ticker": "RADICO",
+   "screener_slug": "RADICO",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE944F01028",
+   "pack_id": null
+  },
+  {
+   "name": "Rail Vikas Nigam Ltd.",
+   "ticker": "RVNL",
+   "screener_slug": "RVNL",
+   "nse_industry": "Construction",
+   "isin": "INE415G01027",
+   "pack_id": null
+  },
+  {
+   "name": "SBI Cards and Payment Services Ltd.",
+   "ticker": "SBICARD",
+   "screener_slug": "SBICARD",
+   "nse_industry": "Financial Services",
+   "isin": "INE018E01016",
+   "pack_id": null
+  },
+  {
+   "name": "SJVN Ltd.",
+   "ticker": "SJVN",
+   "screener_slug": "SJVN",
+   "nse_industry": "Power",
+   "isin": "INE002L01015",
+   "pack_id": null
+  },
+  {
+   "name": "SRF Ltd.",
+   "ticker": "SRF",
+   "screener_slug": "SRF",
+   "nse_industry": "Chemicals",
+   "isin": "INE647A01010",
+   "pack_id": null
+  },
+  {
+   "name": "Schaeffler India Ltd.",
+   "ticker": "SCHAEFFLER",
+   "screener_slug": "SCHAEFFLER",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE513A01022",
+   "pack_id": null
+  },
+  {
+   "name": "Steel Authority of India Ltd.",
+   "ticker": "SAIL",
+   "screener_slug": "SAIL",
+   "nse_industry": "Metals & Mining",
+   "isin": "INE114A01011",
+   "pack_id": null
+  },
+  {
+   "name": "Sundaram Finance Ltd.",
+   "ticker": "SUNDARMFIN",
+   "screener_slug": "SUNDARMFIN",
+   "nse_industry": "Financial Services",
+   "isin": "INE660A01013",
+   "pack_id": null
+  },
+  {
+   "name": "Supreme Industries Ltd.",
+   "ticker": "SUPREMEIND",
+   "screener_slug": "SUPREMEIND",
+   "nse_industry": "Capital Goods",
+   "isin": "INE195A01028",
+   "pack_id": null
+  },
+  {
+   "name": "Suzlon Energy Ltd.",
+   "ticker": "SUZLON",
+   "screener_slug": "SUZLON",
+   "nse_industry": "Capital Goods",
+   "isin": "INE040H01021",
+   "pack_id": null
+  },
+  {
+   "name": "Swiggy Ltd.",
+   "ticker": "SWIGGY",
+   "screener_slug": "SWIGGY",
+   "nse_industry": "Consumer Services",
+   "isin": "INE00H001014",
+   "pack_id": null
+  },
+  {
+   "name": "Tata Communications Ltd.",
+   "ticker": "TATACOMM",
+   "screener_slug": "TATACOMM",
+   "nse_industry": "Telecommunication",
+   "isin": "INE151A01013",
+   "pack_id": null
+  },
+  {
+   "name": "Tata Elxsi Ltd.",
+   "ticker": "TATAELXSI",
+   "screener_slug": "TATAELXSI",
+   "nse_industry": "Information Technology",
+   "isin": "INE670A01012",
+   "pack_id": null
+  },
+  {
+   "name": "Tata Investment Corporation Ltd.",
+   "ticker": "TATAINVEST",
+   "screener_slug": "TATAINVEST",
+   "nse_industry": "Financial Services",
+   "isin": "INE672A01026",
+   "pack_id": null
+  },
+  {
+   "name": "The New India Assurance Company Ltd.",
+   "ticker": "NIACL",
+   "screener_slug": "NIACL",
+   "nse_industry": "Financial Services",
+   "isin": "INE470Y01017",
+   "pack_id": null
+  },
+  {
+   "name": "Thermax Ltd.",
+   "ticker": "THERMAX",
+   "screener_slug": "THERMAX",
+   "nse_industry": "Capital Goods",
+   "isin": "INE152A01029",
+   "pack_id": null
+  },
+  {
+   "name": "Torrent Power Ltd.",
+   "ticker": "TORNTPOWER",
+   "screener_slug": "TORNTPOWER",
+   "nse_industry": "Power",
+   "isin": "INE813H01021",
+   "pack_id": null
+  },
+  {
+   "name": "Tube Investments of India Ltd.",
+   "ticker": "TIINDIA",
+   "screener_slug": "TIINDIA",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE974X01010",
+   "pack_id": null
+  },
+  {
+   "name": "UNO Minda Ltd.",
+   "ticker": "UNOMINDA",
+   "screener_slug": "UNOMINDA",
+   "nse_industry": "Automobile and Auto Components",
+   "isin": "INE405E01023",
+   "pack_id": null
+  },
+  {
+   "name": "UPL Ltd.",
+   "ticker": "UPL",
+   "screener_slug": "UPL",
+   "nse_industry": "Chemicals",
+   "isin": "INE628A01036",
+   "pack_id": null
+  },
+  {
+   "name": "United Breweries Ltd.",
+   "ticker": "UBL",
+   "screener_slug": "UBL",
+   "nse_industry": "Fast Moving Consumer Goods",
+   "isin": "INE686F01025",
+   "pack_id": null
+  },
+  {
+   "name": "Vishal Mega Mart Ltd.",
+   "ticker": "VMM",
+   "screener_slug": "VMM",
+   "nse_industry": "Consumer Services",
+   "isin": "INE01EA01019",
+   "pack_id": null
+  },
+  {
+   "name": "Vodafone Idea Ltd.",
+   "ticker": "IDEA",
+   "screener_slug": "IDEA",
+   "nse_industry": "Telecommunication",
+   "isin": "INE669E01016",
+   "pack_id": null
+  },
+  {
+   "name": "Voltas Ltd.",
+   "ticker": "VOLTAS",
+   "screener_slug": "VOLTAS",
+   "nse_industry": "Consumer Durables",
+   "isin": "INE226A01021",
+   "pack_id": null
+  },
+  {
+   "name": "Waaree Energies Ltd.",
+   "ticker": "WAAREEENER",
+   "screener_slug": "WAAREEENER",
+   "nse_industry": "Capital Goods",
+   "isin": "INE377N01017",
+   "pack_id": null
+  },
+  {
+   "name": "Yes Bank Ltd.",
+   "ticker": "YESBANK",
+   "screener_slug": "YESBANK",
+   "nse_industry": "Financial Services",
+   "isin": "INE528G01035",
+   "pack_id": null
+  }
+ ]
+}

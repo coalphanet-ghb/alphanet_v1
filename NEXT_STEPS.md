@@ -459,6 +459,18 @@ partial rate, mangled-uuid rate, I's output variance).
 
 ---
 
+# NEXT ERA — GENERALIZATION to Nifty Midcap 150 (owner-opened 2026-07-22)
+
+See **GENERALIZATION_PLAN.md** (the audit verdict + universe registry
++ phases G0–G4). Headlines: universe built from the official NSE CSV
+(`data/universe/nifty_midcap150.json`, 150 companies, 19 industries);
+specs/extraction/contract/backbone audited GENERAL; the gaps are
+onboarding (hardcoded COMPANIES), pack coverage (3 of ~20, financials
+= 36 companies untested), seeds, and at-scale preflight/acceptance.
+SONA v22 frozen as golden; M&M final validation still owed first.
+
+---
+
 # [ABSORBED 2026-07-21 into the FIVE-ROUND PLAN above — kept for its target architecture + storage decisions] ARCHITECTURE PLAN — three-layer pipelines + Extraction 3.0 (owner-decided 2026-07-19)
 
 Supersedes the O-plan below (its items are absorbed into phases R0–R5;

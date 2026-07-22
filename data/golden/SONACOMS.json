@@ -1,71 +1,74 @@
 {
   "fingerprint": {
-    "claim_checks": 24,
+    "claim_checks": 22,
     "quality": {
-      "total": 480,
-      "unresolved": 9,
-      "verified_supported": 158,
-      "verified_total": 200
+      "total": 580,
+      "unresolved": 1,
+      "verified_supported": 179,
+      "verified_total": 231
     },
     "sections": {
       "B": {
         "blocks": {
+          "flag": 3,
           "metric_card": 2,
-          "narrative": 5,
+          "narrative": 6,
           "ranked_list": 1,
-          "table": 1
-        },
-        "claims": 18,
-        "insufficiencies": 7
-      },
-      "C": {
-        "blocks": {
-          "flag": 1,
-          "metric_card": 1,
-          "narrative": 4,
-          "ranked_list": 1,
-          "table": 1
+          "table": 4
         },
         "claims": 20,
         "insufficiencies": 7
       },
-      "D": {
+      "C": {
         "blocks": {
+          "flag": 3,
+          "metric_card": 1,
           "narrative": 3,
           "ranked_list": 1,
-          "table": 3
+          "table": 1
         },
-        "claims": 15,
+        "claims": 24,
+        "insufficiencies": 8
+      },
+      "D": {
+        "blocks": {
+          "flag": 5,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 2
+        },
+        "claims": 20,
         "insufficiencies": 10
       },
       "D1": {
         "blocks": {
           "flag": 3,
           "metric_card": 2,
-          "narrative": 6,
-          "table": 3
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 1
         },
         "claims": 20,
-        "insufficiencies": 8
+        "insufficiencies": 7
       },
       "D2": {
         "blocks": {
           "flag": 7,
           "metric_card": 1,
-          "narrative": 5,
-          "table": 1
+          "narrative": 5
         },
-        "claims": 25,
-        "insufficiencies": 7
+        "claims": 24,
+        "insufficiencies": 10
       },
       "D3": {
         "blocks": {
-          "flag": 4,
+          "flag": 3,
           "metric_card": 1,
-          "narrative": 4,
+          "narrative": 3,
+          "ranked_list": 1,
           "table": 1
         },
-        "claims": 20,
+        "claims": 10,
         "insufficiencies": 5
       },
       "E": {
@@ -76,62 +79,61 @@
           "ranked_list": 1,
           "table": 1
         },
-        "claims": 25,
-        "insufficiencies": 9
+        "claims": 31,
+        "insufficiencies": 10
       },
       "F": {
         "blocks": {
-          "flag": 5,
+          "flag": 8,
           "metric_card": 2,
-          "narrative": 2,
+          "narrative": 3,
           "ranked_list": 1,
           "table": 1
         },
-        "claims": 18,
-        "insufficiencies": 12
+        "claims": 34,
+        "insufficiencies": 10
       },
       "G": {
         "blocks": {
           "flag": 1,
           "metric_card": 1,
           "narrative": 3,
-          "ranked_list": 1,
           "table": 1
         },
-        "claims": 15,
-        "insufficiencies": 5
+        "claims": 16,
+        "insufficiencies": 7
       },
       "H": {
         "blocks": {
-          "flag": 3,
-          "metric_card": 1,
+          "flag": 2,
           "narrative": 3,
           "ranked_list": 1
         },
-        "claims": 18,
-        "insufficiencies": 7
+        "claims": 17,
+        "insufficiencies": 8
       },
       "I": {
         "blocks": {
+          "flag": 1,
           "metric_card": 2,
           "narrative": 7,
           "table": 1
         },
-        "claims": 8,
-        "insufficiencies": 5
+        "claims": 20,
+        "insufficiencies": 6
       },
       "J": {
         "blocks": {
           "narrative": 1,
           "ranked_list": 3
         },
-        "claims": 14,
-        "insufficiencies": 6
+        "claims": 12,
+        "insufficiencies": 5
       }
     }
   },
-  "frozen_at": "2026-07-21T20:55:41.240494+00:00",
-  "report_version_id": "5ecfb717-a5d7-4184-86b1-372cd989998f",
+  "frozen_at": "2026-07-22T05:59:12.082230+00:00",
+  "report_version_id": "fbd16d89-fe2c-4bfe-b0a9-320a3e4fefb3",
   "ticker": "SONACOMS",
-  "version": 21
+  "version": 22
 }
