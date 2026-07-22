@@ -2,7 +2,7 @@
 Thin data-access layer over Supabase (Postgres), using the service_role key
 server-side (bypasses RLS — never expose this key to a frontend).
 
-Design notes carried over from HANDOFF.md:
+Design notes carried over from FOUNDATIONS.md §2:
 - The schema is FROZEN. Nothing here alters tables.
 - `claims.evidence_ids` is a uuid[] with no FK enforcement possible at the
   DB level, so `save_claims` performs the citation-integrity check in
@@ -346,7 +346,7 @@ def save_claims(knowledge_entry_id: str, claims: List[dict],
     """
     claims: [{"text": ..., "evidence_ids": [...], "confidence": ...}, ...]
 
-    THE citation-integrity check (HANDOFF.md §5/§8): Postgres cannot enforce
+    THE citation-integrity check (FOUNDATIONS.md §2/§3): Postgres cannot enforce
     FKs on uuid[] elements, so before persisting we verify every referenced
     evidence UUID resolves to a real evidence row. strict=True raises on any
     dangling id; strict=False persists the offending claims with

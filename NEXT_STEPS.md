@@ -459,15 +459,30 @@ partial rate, mangled-uuid rate, I's output variance).
 
 ---
 
-# NEXT ERA — GENERALIZATION to Nifty Midcap 150 (owner-opened 2026-07-22)
+# THE ROAD AHEAD (owner-sequenced 2026-07-22; supersedes any other ordering)
 
-See **GENERALIZATION_PLAN.md** (the audit verdict + universe registry
-+ phases G0–G4). Headlines: universe built from the official NSE CSV
-(`data/universe/nifty_midcap150.json`, 150 companies, 19 industries);
-specs/extraction/contract/backbone audited GENERAL; the gaps are
-onboarding (hardcoded COMPANIES), pack coverage (3 of ~20, financials
-= 36 companies untested), seeds, and at-scale preflight/acceptance.
-SONA v22 frozen as golden; M&M final validation still owed first.
+**Status:** five-round plan code-complete and SONA-validated; **SONA
+golden = v22 (owner-frozen)**. GENERALIZATION_PLAN.md exists as a
+LONG-TERM deliverable — do NOT execute it yet.
+
+1. **M&M final validation** (owner runs, assistant analyzes): auto_oem
+   backbone builds inline; AR through the 5-bundle conversation with
+   ZERO skips (the original unsolvable); percentile computed (was
+   insufficiency); TMPV non-comparability rule visible in G; the
+   verifier-partials comparison that settles the ≤40-word pointer
+   question. Then freeze the M&M golden. PASSING THIS = the current
+   pipeline is declared working.
+2. **UI + MAPPING ERA**: build the UI renderer against
+   report_versions.sections_json (envelope contract v1.0.0 + the
+   run manifest are the API — never re-parse markdown). The mapping
+   exercise doubles as the NEXT OPTIMIZATION AUDIT: the report is
+   still too big, and pruning decisions (what's needed / not needed /
+   missing / waste) come FROM mapping sections+blocks to UI surfaces —
+   not from another blind cost pass. Learnings land here as they
+   accumulate.
+3. **Only after final mapping + fully optimized flow/output:** UPDATE
+   GENERALIZATION_PLAN.md (G0–G4) to match the then-current pipeline,
+   THEN execute it (Midcap 150 → Nifty 500).
 
 ---
 

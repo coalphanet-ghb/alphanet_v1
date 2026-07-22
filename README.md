@@ -1,7 +1,13 @@
 # AlphaNet — AI-native equity research for Indian equities
 
 Generates an institutional-grade, evidence-cited research report per
-company (no Buy/Sell/Hold — ever). Design docs, in dependency order:
+company (no Buy/Sell/Hold — ever).
+
+**Start here:** [HANDOFF4.md](HANDOFF4.md) (current state + work order)
+and [FOUNDATIONS.md](FOUNDATIONS.md) (product identity, settled
+decisions and why, principles, compliance).
+
+Design docs, in dependency order:
 
 1. [REPORT_BLUEPRINT.md](REPORT_BLUEPRINT.md) — the 11-section report (frozen v0.3)
 2. [DATA_SOURCES.md](DATA_SOURCES.md) — source universe, sector taxonomy, query banks

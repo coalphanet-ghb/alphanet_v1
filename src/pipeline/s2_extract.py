@@ -101,7 +101,7 @@ Verbatim quotes only; no arithmetic; no inference beyond the text."""
 # Output budgets: provider cap (64K on Fireworks). Extraction output is
 # genuinely long — a 213-page AR under the every-cell focus produced >32K
 # tokens of VISIBLE output (not reasoning) and truncated mid-JSON on a
-# reingest. Reasoning tokens also live inside this budget (HANDOFF2 §6.12).
+# reingest. Reasoning tokens also live inside this budget (FOUNDATIONS §5.12).
 _EXTRACT_MAX_TOKENS = 64000
 
 

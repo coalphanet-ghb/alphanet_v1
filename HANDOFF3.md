@@ -40,9 +40,12 @@
    invariants (citation integrity, append-only facts, where the
    architecture plan touches storage). Read before touching db.py or
    anything that persists.
-6. **HANDOFF2.md / HANDOFF.md** — historical context only. Their plans
-   are fully executed; their principles (§6 best practices in HANDOFF2,
-   anti-hallucination in HANDOFF) still hold and are extended by §7 below.
+6. **FOUNDATIONS.md** — product identity, settled architecture
+   decisions + their rationale, anti-hallucination principles, the
+   12 best practices, and the compliance risks. (Consolidated
+   2026-07-22 from HANDOFF.md + HANDOFF2.md, which were deleted; their
+   plans were fully executed, their principles live on there and are
+   extended by §7 below.)
 7. Golden reports: `data/reports/SONACOMS_20260718_095433.md` (v18) and
    `data/reports/M_M_20260718_151030.md` (v3) — read one end-to-end.
 
@@ -202,7 +205,7 @@ mostly multiple expansion, PE 47→68, EPS +10%).
 - Verifier not-fully-supported is sampling-noisy (6–16% run to run) —
   treat the trend, not single runs.
 
-## 7. Best practices learned (extends HANDOFF2 §6 — all still valid)
+## 7. Best practices learned (extends FOUNDATIONS §5 — all still valid)
 
 1. **Identity-validate every templated source.** wisesheets resolved
    ticker "M&M.NS" to Macy's Inc — a wrong-company page passes any

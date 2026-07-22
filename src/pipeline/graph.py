@@ -1,5 +1,5 @@
 """
-The S0–S9 report-generation graph (Phase 4 order, HANDOFF2 §5):
+The S0–S9 report-generation graph (Phase 4 order; see HANDOFF3 §2):
 
   s0_resolve -> s1_discover -> s2_extract -> s3_compute
       -> [B, E, D1(s4a_pl), D2(s4b_bs), D3(s4c_cf)]   (parallel wave)

@@ -1,5 +1,6 @@
 """
-Golden-set regression tool (Phase 6, HANDOFF2 §5 / old HANDOFF §8.7).
+Golden-set regression tool (Phase 6; FOUNDATIONS.md §3.7 — the golden-set
+principle).
 
 Freeze a trusted report as the golden baseline, then diff any later run
 against it — section-level block/claim/citation fingerprints, so quality
