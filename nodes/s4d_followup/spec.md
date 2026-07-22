@@ -23,4 +23,4 @@ If the passages do not contain the answer, say exactly
 "not in supplied passages".
 Return ONLY JSON:
 {"answers": [{"idx": <int>, "answer": "<=60 words",
-              "evidence_ids": ["<uuid>", ...]}]}
+              "evidence_ids": ["<label>", ...]}]}

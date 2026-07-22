@@ -79,10 +79,12 @@ def synthetic_envelope(letter: str) -> dict:
              "md": "_Dry run — no LLM call. This block would contain the "
                    f"section-{letter} analysis grounded in evidence and "
                    "calc:* citations._",
-             "citations": ["syn_ev_concall"]},
+             # cited by LABEL, as a live node would (the three synthetic
+             # passages label as CC / AR / CR — one document each)
+             "citations": ["CC"]},
         ],
         "claims": [{"text": f"(dry) synthetic claim for section {letter}",
-                    "evidence_ids": ["syn_ev_concall"], "confidence": 1.0}],
+                    "evidence_ids": ["CC"], "confidence": 1.0}],
         "insufficiencies": ["dry run — everything"],
     }
     # Phase 4: statement-forensic envelopes carry claim_checks +
@@ -90,7 +92,7 @@ def synthetic_envelope(letter: str) -> dict:
     if letter in ("D1", "D2", "D3"):
         env["claim_checks"] = [
             {"mgmt_claim": f"(dry) guided 25-27% EBITDA margin ({letter})",
-             "evidence_id": "syn_ev_concall",
+             "evidence_id": "CC",
              "computed_ref": "calc:opm_pct_series",
              "verdict": "contradicted" if letter == "D1" else "corroborated",
              "note": "(dry) computed series vs guided range"}]

@@ -70,6 +70,26 @@ requires membership in THIS RUN's evidence pool. **Deliberately
 declined:** a `claim_evidence` junction table (owner decision — keep
 the array + app-code check).
 
+**Why models cite LABELS, not UUIDs — and why the DB still stores
+UUIDs.** A 36-char hex string is unreadable in a research report and
+models transpose its digits (~1 mangled citation per run for months).
+So every passage in a run's pool gets a short run-scoped label —
+`AR.17`, `CC-May26.4`, `S-MARUTI`, or a plain `47` for the news / sector
+/ macro tail — and nodes see and cite only those. The UUID remains the
+storage and verification currency: `claims.evidence_ids` is uuid[] and
+the schema is frozen, so labels resolve to UUIDs before anything is
+persisted. Labels are deliberately **run-scoped**, never stored
+per-document: they depend on the whole pool (including rehydrated
+shared-layer rows), so a stored label would go stale the moment the next
+run pooled a different set. The run's map ships inside
+`report_versions.sections_json["citation_map"]`, which is what keeps a
+stored report re-resolvable and gives the UI its footnote markers.
+The known tension: UUIDs are hallucination-resistant *because* they are
+long and unguessable, and a short label is not — the mitigation is that
+an invented label resolves to nothing, so it costs a DROPPED citation,
+never a false one. Watch the "did not resolve to a pooled passage"
+counter; it was zero on the first validated run.
+
 **Why `evidence.embedding` stays null.** Retrieval is deterministic and
 structural: "give me evidence linked to entity X from document type Y"
 — a plain SQL join through `entity_mentions`. Embeddings only matter

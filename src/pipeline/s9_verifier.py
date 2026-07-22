@@ -8,11 +8,15 @@ import json
 
 from src import db
 from src.llm import generate_json, set_current_node, note_wasted_output
+from src.pipeline import citations
 
 _SYSTEM = """You are a verification instrument. The EXCERPTS section lists
-evidence excerpts ONCE each, labelled [E1], [E2], ... The CLAIMS section
-lists claims; each claim's EVIDENCE line names the excerpt ids that are
-its cited evidence. Judge every claim ONLY from its named excerpts:
+evidence excerpts ONCE each, labelled with their citation ids — e.g.
+[AR.17] (annual report), [CC-May26.4] (that quarter's earnings call),
+[IP.9] (investor presentation), [12] (a news / sector / macro link). The
+CLAIMS section lists claims; each claim's EVIDENCE line names the excerpt
+ids that are its cited evidence. Judge every claim ONLY from its named
+excerpts:
 - "supported": the excerpts state or directly entail the claim
 - "partial": direction right, but the claim adds precision or scope the
   excerpts do not contain
@@ -61,11 +65,21 @@ def verifier_node(state) -> dict:
         # that sat just past the old 600-char cut
         return f"{meta}\n{e['text'][:1200]}"
 
+    # claims cite LABELS; resolve to uuids to look the passage up, and
+    # keep the label for display (a verdict note reading "CC-Aug25.3 is
+    # from the Aug 2025 call" beats one reading "E16")
+    labels = state.get("citation_labels") or {}
+    label_of = {uid: lab for lab, uid in labels.items()}
+
     tasks = []
     for letter in ("B", "C", "D", "D1", "D2", "D3", "E", "F", "G", "H", "I", "J"):
         env = state.get(f"envelope_{letter}") or {}
         for c in env.get("claims", []):
-            ids = [i for i in c.get("evidence_ids", []) if i in ev_by_id]
+            ids = []
+            for i in c.get("evidence_ids", []) or []:
+                uid = citations.to_uuid(i, labels, ev_by_id)
+                if uid and uid not in ids:
+                    ids.append(uid)
             if ids:
                 tasks.append({"letter": letter, "claim": c,
                               "ev_ids": ids[:3]})
@@ -93,18 +107,22 @@ def verifier_node(state) -> dict:
         # Round 2.2: excerpt dedup — claims cluster on the same passages,
         # and the old rendering re-billed each 1200-char excerpt once per
         # citing claim. Render every unique excerpt ONCE per batch; claims
-        # reference E<n> ids. Coverage untouched (every claim is still
-        # judged against every excerpt it cites).
-        index: dict = {}
+        # reference it by its run-scoped citation label. Coverage
+        # untouched (every claim is still judged against every excerpt it
+        # cites).
+        seen: list = []
         for t in batch:
             for eid in t["ev_ids"]:
-                if eid not in index:
-                    index[eid] = len(index) + 1
-        excerpts = "\n\n".join(f"[E{n}] {_excerpt(eid)}"
-                               for eid, n in index.items())
+                if eid not in seen:
+                    seen.append(eid)
+
+        def _lab(eid):
+            return label_of.get(eid, eid)
+
+        excerpts = "\n\n".join(f"[{_lab(eid)}] {_excerpt(eid)}" for eid in seen)
         claims_txt = "\n\n".join(
             f"idx {i}\nCLAIM: {t['claim'].get('text', '')}\nEVIDENCE: " +
-            ", ".join(f"E{index[eid]}" for eid in t["ev_ids"])
+            ", ".join(_lab(eid) for eid in t["ev_ids"])
             for i, t in enumerate(batch))
         user = f"EXCERPTS:\n{excerpts}\n\nCLAIMS:\n{claims_txt}"
         # 16K budget (reasoning tokens count inside max_tokens) + one

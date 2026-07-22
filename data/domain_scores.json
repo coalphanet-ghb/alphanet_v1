@@ -1,7 +1,7 @@
 {
   "angelone.in": {
     "bad": 0,
-    "ok": 6
+    "ok": 7
   },
   "auto.economictimes.indiatimes.com": {
     "bad": 0,
@@ -17,10 +17,14 @@
   },
   "bseindia.com": {
     "bad": 5,
-    "ok": 158
+    "ok": 170
   },
   "business-standard.com": {
     "bad": 7,
+    "ok": 3
+  },
+  "businesstoday.in": {
+    "bad": 0,
     "ok": 1
   },
   "c4scourses.in": {
@@ -57,7 +61,7 @@
   },
   "dhan.co": {
     "bad": 0,
-    "ok": 4
+    "ok": 5
   },
   "dollarrupee.in": {
     "bad": 0,
@@ -69,7 +73,7 @@
   },
   "economictimes.indiatimes.com": {
     "bad": 0,
-    "ok": 27
+    "ok": 29
   },
   "electronicsera.in": {
     "bad": 0,
@@ -89,7 +93,7 @@
   },
   "equitybulls.com": {
     "bad": 0,
-    "ok": 6
+    "ok": 8
   },
   "finance.yahoo.com": {
     "bad": 0,
@@ -97,7 +101,7 @@
   },
   "financialexpress.com": {
     "bad": 0,
-    "ok": 12
+    "ok": 13
   },
   "fortuneindia.com": {
     "bad": 0,
@@ -109,7 +113,7 @@
   },
   "goldenpi.com": {
     "bad": 0,
-    "ok": 1
+    "ok": 2
   },
   "goodreturns.in": {
     "bad": 0,
@@ -161,7 +165,7 @@
   },
   "mahindra.com": {
     "bad": 0,
-    "ok": 1
+    "ok": 2
   },
   "mausam.imd.gov.in": {
     "bad": 1,
@@ -173,7 +177,7 @@
   },
   "moneycontrol.com": {
     "bad": 1,
-    "ok": 12
+    "ok": 15
   },
   "mospi.gov.in": {
     "bad": 0,
@@ -249,7 +253,7 @@
   },
   "simplywall.st": {
     "bad": 0,
-    "ok": 4
+    "ok": 5
   },
   "smart-investing.in": {
     "bad": 0,
@@ -271,6 +275,10 @@
     "bad": 0,
     "ok": 5
   },
+  "studycafe.in": {
+    "bad": 0,
+    "ok": 1
+  },
   "theglobeandmail.com": {
     "bad": 0,
     "ok": 4
@@ -281,7 +289,7 @@
   },
   "tickertape.in": {
     "bad": 0,
-    "ok": 11
+    "ok": 13
   },
   "tijorifinance.com": {
     "bad": 0,
@@ -325,6 +333,6 @@
   },
   "zaubacorp.com": {
     "bad": 0,
-    "ok": 1
+    "ok": 2
   }
 }

@@ -61,10 +61,10 @@ Recomputing or re-deriving statement-level findings (cite sec:D1/D2/D3);
 arithmetic; softening contradicted verdicts; averaging; verdict
 vocabulary (cheap/expensive); omitting the scoreboard.
 Note on claims[]: your context is mostly sec:/calc material with FEW raw
-evidence uuids — put a statement in claims[] ONLY when a genuine evidence
-uuid from your context supports it (e.g. from a claim_check row); all
-other findings live in blocks with sec:/calc citations. Do not invent or
-adapt uuids to force a claim.
+evidence labels — put a statement in claims[] ONLY when a genuine
+evidence label from your context supports it (e.g. from a claim_check
+row); all other findings live in blocks with sec:/calc citations. Do not
+invent or adapt labels to force a claim.
 
 ## Quality checklist
 - [ ] Lead block answers the reader-question with cited findings
@@ -72,4 +72,4 @@ adapt uuids to force a claim.
 - [ ] Scoreboard present with every claim_check row
 - [ ] risk_candidates_for_H includes every contradicted claim
 - [ ] credibility_notes_for_F written for every non-corroborated claim
-- [ ] Every number cites calc:*, sec:D*.<block>, or an evidence UUID
+- [ ] Every number cites calc:*, sec:D*.<block>, or an evidence label

@@ -23,17 +23,26 @@ STRICT JSON envelope:
 
 {"section": "<letter>",
  "blocks": [
-   {"type":"narrative","id":"<slug>","title":"<short>","md":"<markdown prose>","citations":["<evidence-uuid>","calc:<formula_id>"]},
-   {"type":"metric_card","id":"<slug>","metrics":[{"name":"","value":0,"unit":"","period":"","basis":"","provenance":"calc:<id> or <evidence-uuid>"}]},
+   {"type":"narrative","id":"<slug>","title":"<short>","md":"<markdown prose>","citations":["<evidence-label>","calc:<formula_id>"]},
+   {"type":"metric_card","id":"<slug>","metrics":[{"name":"","value":0,"unit":"","period":"","basis":"","provenance":"calc:<id> or <evidence-label>"}]},
    {"type":"table","id":"<slug>","title":"","columns":[],"rows":[[]],"provenance":["calc:<id>"]},
    {"type":"ranked_list","id":"<slug>","items":[{"rank":1,"title":"","md":"","citations":[],"monitorable":"","severity":""}]},
    {"type":"flag","id":"<slug>","check":"","status":"OK|WATCH|FLAG","severity":"low|medium|high","md":"","citations":[]}
  ],
- "claims": [{"text":"<one factual sentence>","evidence_ids":["<evidence-uuid>"],"confidence":0.9}],
+ "claims": [{"text":"<one factual sentence>","evidence_ids":["<evidence-label>"],"confidence":0.9}],
  "insufficiencies": ["<what was missing and which source class would supply it>"]}
 
 CITATION FORMS (use exactly these; anything else fails resolution):
-  - "<evidence-uuid>"        a passage from the supplied evidence
+  - "<evidence-label>"       a passage from the supplied evidence. Every
+    passage is shown to you ALREADY LABELLED in square brackets:
+    [AR.17] annual report · [CC-May26.4] that quarter's earnings call ·
+    [IP.9] investor presentation · [CR.2] credit-rating rationale ·
+    [S-MARUTI] screener page · [47] a news / sector / macro link.
+    Copy the id from inside the brackets EXACTLY as shown. These labels
+    are short, so inventing a plausible-looking one is easy and is a
+    hard error: never cite a label you were not given, and never guess
+    a number. If no supplied passage supports a statement, it belongs in
+    insufficiencies.
   - "calc:<formula_id>"      a value from the computed tables
   - "sec:<LETTER>.<block_id>"  a finding established by an upstream section
     (upstream blocks are shown to you already labelled, e.g.
@@ -46,13 +55,13 @@ CITATION FORMS (use exactly these; anything else fails resolution):
   - "event:<id>"             a pooled event shown in context (labelled
     [event:...] — same rule; never invent an events:/date shorthand)
 Never invent shorthand (e.g. "[E-Summary]", "evidence 3d11") and never cite
-an evidence uuid you were not given.
+an evidence label you were not given.
 
 NON-NEGOTIABLE RULES:
 1. Use ONLY the supplied context. A fact not in context does not exist.
    Gaps go in insufficiencies, never filled from your own knowledge.
 2. NO arithmetic. Every number comes from supplied evidence (cite its
-   uuid) or computed tables (cite calc:<formula_id>). Never derive, sum,
+   label) or computed tables (cite calc:<formula_id>). Never derive, sum,
    average, annualize, or compute growth yourself.
 2b. NO UNIT CONVERSION. Quote every figure in the unit it is given in
    (Rs crore stays crore; a "Rs 237 billion" quote stays billion). Never
@@ -60,7 +69,7 @@ NON-NEGOTIABLE RULES:
    compute layer's job, and hand-converted figures have contradicted each
    other across sections.
 3. Every block carries citations. Every claim carries resolvable
-   evidence_ids (claims cite evidence uuids ONLY — not calc: or sec: ids;
+   evidence_ids (claims cite evidence LABELS ONLY — not calc: or sec: ids;
    a claim whose support is a computed value belongs in a block, not in
    claims[]).
 3a. Claims are ATOMIC and PURELY evidence-backed: one fact per claim,
@@ -69,10 +78,10 @@ NON-NEGOTIABLE RULES:
    verifier checks claims against evidence text only, so the calc half
    can never verify; hybrid sentences belong in blocks. Sections with
    substantial evidence context should yield 8–20 claims; never invent
-   or stretch ids to reach that.
+   or stretch labels to reach that.
 3b. A number you take from an upstream section must be cited as
-   sec:<LETTER>.<block_id> — never re-attribute it to an evidence uuid you
-   did not read it in.
+   sec:<LETTER>.<block_id> — never re-attribute it to an evidence label
+   you did not read it in.
 4. Every number is stated with its period (FY26/Q3FY26/TTM) and basis
    (consolidated/standalone) exactly as given.
 5. NO recommendations, target prices, or verdict vocabulary

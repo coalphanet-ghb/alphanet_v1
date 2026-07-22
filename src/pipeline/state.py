@@ -28,7 +28,9 @@ class ReportState(TypedDict):
     refresh_sector: NotRequired[bool]   # --refresh-sector: force backbone refresh
 
     # s2_extract (in-memory working pools; persisted as they land)
-    evidence_pool: NotRequired[List[dict]]      # [{id, text, doc_class, url, title, tags, page}]
+    evidence_pool: NotRequired[List[dict]]      # [{id, text, doc_class, url, title, tags, page, label}]
+    citation_labels: NotRequired[dict]          # citation label -> evidence uuid (run-scoped; src/pipeline/citations.py)
+    citation_docs: NotRequired[List[dict]]      # ordered document index behind those labels (K legend + UI footnotes)
     metric_candidates: NotRequired[List[dict]]
     guidance_items: NotRequired[List[dict]]
     risk_signals: NotRequired[List[dict]]       # evidence refs tagged risk

@@ -17,7 +17,7 @@ the blocks are the product).
    universal vitals (mcap, P/E, div yield, ROE), pack's ≤8 sector vitals —
    all from calc with provenance; last-updated stamp.
 2. **Citation integrity** (the app-level FK check — non-negotiable):
-   every citation in every block must resolve: evidence UUIDs → evidence
+   every citation in every block must resolve: evidence labels → evidence
    rows; `calc:*` ids → computed_financials entries. Every claims[] row →
    `db.save_claims` with strict evidence-id verification. Unresolvable
    citation → the sentence/block is marked degraded; the count feeds the

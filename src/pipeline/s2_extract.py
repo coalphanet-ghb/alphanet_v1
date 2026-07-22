@@ -19,6 +19,7 @@ import json
 
 from src import db
 from src.config import REUSE_MIN_PASSAGES
+from src.pipeline.citations import build_label_map
 from src.ingestion.fetcher import (
     fetch_document, looks_like_presentation, FetchError,
 )
@@ -709,7 +710,10 @@ def extract_node(state) -> dict:
     if state.get("dry_run"):
         from src.pipeline.dry_run import synthetic_extraction
         print("[s2_extract] DRY RUN — synthetic extraction")
-        return synthetic_extraction(state)
+        pools = synthetic_extraction(state)
+        pools["citation_labels"], pools["citation_docs"] = \
+            build_label_map(pools["evidence_pool"])
+        return pools
 
     persist = state["persist"]
     profile = state["profile"]
@@ -994,9 +998,17 @@ def extract_node(state) -> dict:
     except Exception as e:
         print(f"  [s2][warn] domain score update skipped: {e}")
 
+    # Citation labels are assigned LAST — the pool is only final after the
+    # fresh-layer rehydration above, and a passage stamped before that
+    # would be unlabelled and therefore uncitable.
+    pools["citation_labels"], pools["citation_docs"] = \
+        build_label_map(pools["evidence_pool"])
+
     print(f"[s2_extract] done: {len(pools['evidence_pool'])} passages, "
           f"{len(pools['metric_candidates'])} metric candidates, "
           f"{len(pools['guidance_items'])} guidance items, "
           f"{len(pools['risk_signals'])} risk signals, "
           f"{len(pools['guidance_evolution'])} guidance trails")
+    print(f"  [s2] citation labels: {len(pools['citation_labels'])} passages "
+          f"across {len(pools['citation_docs'])} documents")
     return pools

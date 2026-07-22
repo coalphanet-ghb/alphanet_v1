@@ -459,28 +459,90 @@ partial rate, mangled-uuid rate, I's output variance).
 
 ---
 
+## M&M final validation log (2026-07-22, golden v4 — fresh run, $2.72 / ~45 min)
+
+**6 of 8 gates passed.** PASSED: auto_oem backbone inline (6 members;
+TMCV + HYUNDAI Yahoo identity-refusals expected — the validator refused
+rather than mis-resolved); PE percentile computed from 10y closes ÷ EPS
+(70th pct, median 21.5× — was an insufficiency; caveat: the range high
+of 279.4× is a near-zero-EPS-year artifact, so the band is not a usable
+bound); TMPV non-comparability in G (narrative + Gap 5 + dedicated FLAG
++ insufficiency); envelope contract clean (`schema_issues {}`);
+citations 393/397 = 99.0%; **zero mangled uuids**.
+
+**Verifier: 28/185 = 15.1%** vs SONA v22's 22.5% — back inside the
+6–16% band on a fresh pool with the same ≤40-word AR pointer style.
+**This exonerates the pointer style**; SONA's 3-run elevation was
+pool-specific. The queued counters (2 neighbouring excerpts per claim,
+per-bundle length caps) are CANCELLED — do not ship them.
+
+FAILED: (1) **AR 4/5 bundles** — `growth_outlook` truncated →
+reprompted → unparseable → skipped; 9 calls for 5 bundles, $1.95 = 72%
+of run cost, 1054s = 39% of wall. Not a size problem: SONA's AR prefix
+is LARGER (286K vs 268K cached tokens) and ran 5/5 clean in 5 calls at
+$0.88/227s — it is conglomerate breadth. The terser reprompt also
+halves yield when it works (54 AR passages vs SONA's 136; 111
+candidates vs 307). (2) **Claims ceiling** — B 27, D1 25, E 25, C 24,
+H 22 over the 8–20 band; F at 18 was inside, so it is the contract
+line, not one spec.
+
+Found while analysing, not previously tracked: **67 of 238 claims (28%)
+cite `calc:`/`sec:` in `evidence_ids`** — a rule 3/3a violation, so
+they are generated, silently dropped at persist and never verified
+(I and J at 100%). `validate_envelope` does not catch it. Both
+`contradicted` verdicts were period mis-attribution between concalls.
+
+## Citation labels log (2026-07-22, golden v5 — reuse run, $0.54)
+
+Models no longer see or cite evidence UUIDs — full design and the two
+implementation traps are in **HANDOFF4 §2b**; the durable rationale is
+in **FOUNDATIONS.md §2**. New module `src/pipeline/citations.py`;
+touched s2/s4/s9/s8, the envelope contract, 4 node specs, dry-run
+fixtures.
+
+**GATE RESULT: PASSED — frozen as M&M golden v5.** Raw citation uuids
+in report prose **193 → 0** (the 7 hex strings left in the file are BSE
+`Pname=` URL params in K and the run id in the quality badge).
+**Zero invented labels** across 499 citations / 416 labelled passages —
+every section logged `0 claim citation(s) did not resolve`, so the one
+real risk of a short-id namespace did not materialise on this run.
+Citations 493/499 = 98.8%; verifier 27/187 = **14.4%** (contradicted
+3 → 2); `schema_issues {}`; `diff_golden`: **no regression flags**.
+Section K is now the citation legend; `citation_map` rides in
+`report_versions.sections_json`.
+
+WATCHES: (1) citation volume jumped 397 → 499 (+26%) — short ids are
+cheap to write, so attribution got denser; probably a quality gain,
+but it feeds verifier load. (2) The 6 unresolved citations are two
+pre-existing non-label classes: an invented `event:` shorthand and
+models using prose as a metric_card provenance. (3) The run ingested
+two `rating_rationale` docs that are the WRONG ENTITY / stale — see
+HANDOFF4 §6.1, now the top watch item.
+
+---
+
 # THE ROAD AHEAD (owner-sequenced 2026-07-22; supersedes any other ordering)
 
-**Status:** five-round plan code-complete and SONA-validated; **SONA
-golden = v22 (owner-frozen)**. GENERALIZATION_PLAN.md exists as a
-LONG-TERM deliverable — do NOT execute it yet.
+**Status:** five-round plan code-complete; citation labels landed and
+validated. Goldens: **SONA v22, M&M v5** (both owner-frozen).
+GENERALIZATION_PLAN.md exists as a LONG-TERM deliverable — do NOT
+execute it yet.
 
-1. **M&M final validation** (owner runs, assistant analyzes): auto_oem
-   backbone builds inline; AR through the 5-bundle conversation with
-   ZERO skips (the original unsolvable); percentile computed (was
-   insufficiency); TMPV non-comparability rule visible in G; the
-   verifier-partials comparison that settles the ≤40-word pointer
-   question. Then freeze the M&M golden. PASSING THIS = the current
-   pipeline is declared working.
-2. **UI + MAPPING ERA**: build the UI renderer against
-   report_versions.sections_json (envelope contract v1.0.0 + the
-   run manifest are the API — never re-parse markdown). The mapping
-   exercise doubles as the NEXT OPTIMIZATION AUDIT: the report is
-   still too big, and pruning decisions (what's needed / not needed /
-   missing / waste) come FROM mapping sections+blocks to UI surfaces —
-   not from another blind cost pass. Learnings land here as they
-   accumulate.
-3. **Only after final mapping + fully optimized flow/output:** UPDATE
+1. ~~**M&M final validation**~~ — **DONE** (logs above; HANDOFF4 §7.1).
+2. ~~**Citation labels**~~ — **DONE** (log above; HANDOFF4 §2b).
+3. **AR OPTIMISATION** — the numbers to beat and the diagnosis are in
+   HANDOFF4 §7.2. Owner's framing: "AR things, we will look to optimise
+   more." Everything else from the M&M analysis was explicitly
+   deferred: "rest things are not needed for general improvement."
+4. **UI + MAPPING ERA**: build the UI renderer against
+   report_versions.sections_json (envelope contract v1.0.0 + the run
+   manifest + `citation_map` are the API — never re-parse markdown).
+   The mapping exercise doubles as the NEXT OPTIMIZATION AUDIT: the
+   report is still too big, and pruning decisions (what's needed / not
+   needed / missing / waste) come FROM mapping sections+blocks to UI
+   surfaces — not from another blind cost pass. Learnings land here as
+   they accumulate.
+5. **Only after final mapping + fully optimized flow/output:** UPDATE
    GENERALIZATION_PLAN.md (G0–G4) to match the then-current pipeline,
    THEN execute it (Midcap 150 → Nifty 500).
 

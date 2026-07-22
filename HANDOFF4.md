@@ -7,6 +7,11 @@
 > code-complete and SONA-validated: golden v22 (owner-frozen) at
 > $0.53/run, 10.5 min, 99.8% citations, zero spirals.** Where this doc
 > disagrees with HANDOFF3 or the memory file, THIS FILE WINS.
+>
+> **Since then (2026-07-22, in order):** M&M ran its final validation
+> (§7.1 gates — analysed below, golden v4), then **CITATION LABELS**
+> landed and were validated (§2b, golden **v5** — the current M&M
+> baseline). Next up is the AR optimisation, then the UI era (§7).
 
 ---
 
@@ -91,6 +96,51 @@ sidecar (citations/verifier/schema/sections stats); content-hash reuse
 (fetch_hash in doc metadata — rotated BSE Pname URLs no longer force
 re-reads).
 
+## 2b. Citation labels (2026-07-22, after the five rounds)
+
+**Nodes no longer see or cite evidence UUIDs.** Every passage in a run's
+pool gets a short run-scoped LABEL and models cite that:
+
+```
+AR.17        annual report          CC-May26.4   that quarter's call
+IP.9         investor presentation  CR.2         rating rationale
+S-MARUTI     screener page          47           news / sector / macro tail
+```
+
+`src/pipeline/citations.py` owns it: `build_label_map(pool)` stamps
+`label` on every row and returns (label → uuid, ordered doc index);
+`to_uuid()` resolves a citation. Labels are assigned ONCE, at the very
+end of `extract_node` — **after** the fresh-layer rehydration, or those
+~150 macro/industry passages would be unlabelled and uncitable.
+Single-passage docs drop the index (`IP`, not `IP.1`); same-class
+collisions uniquify (`AR`, `AR2`). **Concall labels carry the quarter**
+deliberately — two of M&M v4's verifier verdicts were period
+mis-attributions between transcripts, so the model now re-reads the
+quarter every time it reads the id.
+
+The UUID **stays the storage and verification currency**:
+`claims.evidence_ids` is uuid[] and the schema is frozen, so
+`run_section` resolves labels → uuids before `save_claims`. Section K
+became the citation LEGEND, and the run's map persists to
+`report_versions.sections_json["citation_map"]` (jsonb, no DDL) so
+stored reports stay re-resolvable and the UI gets footnote markers for
+free. UUID citation paths are KEPT everywhere as the fallback and are
+commented as such — delete them only after a few more clean runs.
+
+Two traps, both closed: `_strip_inline_evidence` matches labels
+**exactly against the run's map** (not by shape), so a bare `[47]` is
+stripped only when 47 is really a label while `[sec:]/[calc:]/[edge:]`
+survive; and the composer's label lookup runs BEFORE the `sec:`/bare
+block-id paths, because `AR.17` shares their `<X>.<y>` shape. s9 dropped
+its per-batch `[E<n>]` indirection entirely (one less mapping, and
+verdict notes now read "CC-Aug25.3 is from the Aug 2025 call").
+
+**Validated on M&M v5** (reuse run, $0.54): raw citation uuids in report
+prose **193 → 0**; **zero invented labels** across 499 citations;
+citations 493/499 = 98.8%; verifier 27/187 = 14.4%; `schema_issues {}`;
+`diff_golden` — *no regression flags*. All 6 unresolved citations are
+pre-existing non-label classes (see §6).
+
 **Cross-round fixes** (each found by a live run, fixed same day):
 resolver accepts `evidence:<8-hex>` prefixes; `_strip_inline_evidence`
 removes [uuid]/[evidence:x] markers from upstream summaries (section I
@@ -114,8 +164,12 @@ per-node telemetry table + sidecar path at end of run; `[sector]
 backbone fresh — N members rehydrated`; `[s2] AR bundle '<name>': …
 (cached N tok)`; `[s2] cross-quarter trails-pass: N trails`; `[s2]
 extraction focus changed … re-reading` (expected exactly once after
-any focus edit); `[s8] envelope contract violation(s)` (expect NONE);
-`schema_issues: {}` in the sidecar manifest; composer citations ≥98%.
+any focus edit); `[s2] citation labels: N passages across M documents`;
+`[synth_X] N claim citation(s) did not resolve to a pooled passage`
+(**expect 0** — a non-zero count is a model inventing labels, the one
+risk the label scheme carries); `[s8] envelope contract violation(s)`
+(expect NONE); `schema_issues: {}` in the sidecar manifest; composer
+citations ≥98%.
 Tee-Object writes UTF-16 logs — read them with
 `iconv -f UTF-16LE -t UTF-8` or PowerShell-native tools.
 
@@ -142,52 +196,108 @@ without a documented incident.
 
 ## 6. Watch list (open items, in priority order)
 
-1. **Verifier not-fully-supported elevated 3 runs straight** (21%,
-   21%, 22.5% vs the historical 6–16%; partials dominate). Suspect:
-   the ≤40-word AR pointer style gives the verifier thinner excerpts.
-   **The M&M run is the decider** — fresh evidence pool, same style.
-   Counters if confirmed: allow 2 neighboring excerpts per claim, or
-   per-bundle length caps (disclosures 40 / commentary 70).
-2. **E and F exceeded the 8–20 claims ceiling** (31/34) — inflates
-   verifier load; if M&M repeats it, re-assert the ceiling in the
-   contract (one line).
-3. Mangled-uuid citations: ~1/run survives (transposed hex; block
-   citations have no pool-gate). Floor reached; revisit only if >2.
-4. synth_I output variance (15K–27K run to run) — prose-heavy spec.
-5. metric_names canon is auto-flavored (order_book etc.) — fine (unit
+1. **Rating-rationale discovery pulls the WRONG ENTITY.** M&M v5
+   ingested 15 evidence rows as `rating_rationale`: `[CR.1–CR.4]` is a
+   GoldenPi bond page for **Mahindra & Mahindra *Financial Services***
+   (the listed NBFC subsidiary, a different company) and `[CR2.1–CR2.11]`
+   is a CRISIL rationale dated **30-09-2019** — six years stale. This is
+   an identity failure of exactly the class the deterministic spine
+   guards against elsewhere (the wisesheets "M&M.NS → Macy's"
+   precedent), and wrong-entity evidence is worse than missing
+   evidence. Needs an identity + recency gate on the rating hunt in s1.
+   (SONA has 1 rating doc / 4 rows; on the M&M v4 run both agency URLs
+   404'd — so this class is thin AND unreliable.)
+2. **AR extraction is the cost and data-loss centre** — see §7.2. On the
+   v4 fresh run: $1.95 = 72% of run cost, 1054s = 39% of wall, 9 calls
+   for 5 bundles, and `growth_outlook` skipped outright.
+3. **Claims-per-section ceiling (8–20) is not holding** — v4: B 27,
+   D1 25, E 25, C 24, H 22; v5: C 29, E 29, F 25. Not F-specific (F was
+   18 on v4), so it is the contract line, not one spec. Re-assert it.
+4. **Claims that cite `calc:`/`sec:` instead of evidence** are generated,
+   silently dropped at persist and never verified: v4 67/238 = 28%
+   (sections I and J at 100%), v5 47/222 = 21%. `validate_envelope`
+   does NOT catch this — it checks `evidence_ids` is a *list*, not that
+   entries resolve. Cheapest real fix on the board: a uuid/label check
+   in the validator so it lands in `schema_issues`, plus a contract line
+   for I/J (whose support genuinely is mostly calc/sec — the fix is
+   "don't emit claims you can't back", not "find more claims").
+5. **Citation volume jumped 397 → 499 (+26%) when labels landed** —
+   short ids are cheap to write, so attribution got denser. Probably a
+   quality gain; watch that it does not inflate verifier load.
+6. Two unresolved-citation classes survive (~6/run, 1.2%), neither
+   label-related: an invented `event:` shorthand (`27_mam_japan_…`,
+   `26_sml_acquisition_complete`) and models using prose
+   (`insufficiency: no promoter holding % disclosed…`) as a
+   metric_card provenance. Floor-ish; revisit if the rate climbs.
+7. synth_I output variance (15K–27K run to run) — prose-heavy spec.
+8. metric_names canon is auto-flavored (order_book etc.) — fine (unit
    guard + descriptive-name fallback), relevant only at generalization.
+9. Cosmetic: M&M's own screener label renders `S-M26M` (URL-encoded
+   `M%26M` slug). One line in `citations._doc_mnemonic` whenever.
 
-## 7. THE ROAD AHEAD (owner-sequenced 2026-07-22)
+**Closed since the last handoff:** the mangled-uuid class (§2b — models
+cannot transpose hex they are never shown; v5 had zero label failures)
+and the ≤40-word AR-pointer suspicion (M&M v4 came in at 15.1%
+not-fully-supported, back inside the 6–16% band, so the pointer style
+is exonerated — SONA's 3-run elevation was pool-specific. Do NOT ship
+the queued counters: neighbouring excerpts, per-bundle length caps).
 
-1. **M&M final validation** — owner runs it, assistant analyzes the
-   log. Gates: auto_oem backbone builds inline (TMPV/TMCV Yahoo
-   identity-refusals are EXPECTED degradations); AR through 5 bundles
-   ZERO skips (this was THE unsolvable — M&M's FY-1 conglomerate AR
-   used to overflow 64K twice and get skipped); percentile computed
-   from 10y closes ÷ EPS; TMPV declared non-comparable in G; verifier
-   partials compared to SONA's (watch #1). Old M&M golden v3 is
-   PRE-R4 — not a fair diff; review on gates, then freeze the new M&M
-   golden. Passing = current pipeline declared WORKING.
-2. **UI + MAPPING ERA** (starts after M&M): renderer against
-   report_versions.sections_json — envelope contract v1.0.0 + the run
-   manifest are the API; NEVER re-parse markdown. The mapping exercise
-   IS the next optimization audit: the report is still too big, and
-   pruning (needed / not needed / missing / waste) is decided by
-   mapping blocks to UI surfaces, not by another blind cost pass.
-3. **Then**: update GENERALIZATION_PLAN.md to the post-UI pipeline and
-   execute it (Midcap 150 → Nifty 500). Universe registry already
-   built: data/universe/nifty_midcap150.json (36/150 are financials —
-   the hard cohort; 10 auto constituents are already pack-covered).
+## 7. THE ROAD AHEAD (owner-sequenced, updated 2026-07-22)
+
+**7.1 M&M final validation — DONE (golden v4, then v5).** Result: 6 of
+8 gates passed. PASSED: auto_oem backbone inline (TMCV/HYUNDAI Yahoo
+identity-refusals as expected — refused rather than mis-resolved);
+PE percentile computed from 10y closes ÷ EPS (70th pct, median 21.5×,
+was an insufficiency); TMPV non-comparability in G (narrative + gap +
+dedicated FLAG + insufficiency); envelope contract clean; citations
+99.0%; verifier 15.1% (settled the pointer-style question — §6).
+FAILED, both pre-existing and both now tracked in §6: the AR bundle
+skip (4/5 — `growth_outlook` truncated → reprompted → unparseable →
+skipped) and the claims ceiling. Caveat for the percentile: the 10y
+range high of 279.4× is a near-zero-EPS-year artifact, so the *band*
+is meaningless as a bound even though the median is sane.
+
+**7.2 AR optimisation — NEXT (owner: "we will look to optimise more").**
+The numbers to beat, from the v4 fresh run: 9 calls for 5 bundles
+(3 truncations + 2 unparseable), $1.95 = 72% of run cost, 1054s = 39%
+of wall, one bundle lost. It is NOT a size problem — SONA's AR prefix
+is *larger* (286K vs 268K cached tokens) and ran 5/5 clean in 5 calls
+at $0.88/227s. It is conglomerate breadth: each bundle has more to say
+and blows the 64K output budget. Note the retry ladder's real cost —
+the "be MUCH terser" reprompt only fires AFTER a wasted 64K generation,
+and when it succeeds it roughly halves yield (54 AR passages vs SONA's
+136; 111 candidates vs 307). Likely direction: start the wide bundles
+terse instead of paying a truncation first, or split `growth_outlook`.
+
+**7.3 UI + MAPPING ERA** (after 7.2): renderer against
+`report_versions.sections_json` — envelope contract v1.0.0, the run
+manifest, and now `citation_map` are the API; NEVER re-parse markdown.
+The label scheme was built with this in mind: `citation_map.labels`
+gives footnote markers and `citation_map.documents` gives the legend,
+so the UI never touches a uuid. The mapping exercise IS the next
+optimization audit: the report is still too big, and pruning (needed /
+not needed / missing / waste) is decided by mapping blocks to UI
+surfaces, not by another blind cost pass.
+
+**7.4 Then**: update GENERALIZATION_PLAN.md to the post-UI pipeline and
+execute it (Midcap 150 → Nifty 500). Universe registry already built:
+data/universe/nifty_midcap150.json (36/150 are financials — the hard
+cohort; 10 auto constituents are already pack-covered).
 
 ## 8. Bootstrap for the new session
 
 Suggested first message:
 > Read HANDOFF4.md fully, then NEXT_STEPS.md ("THE ROAD AHEAD" + the
-> five Round logs), then skim GENERALIZATION_PLAN.md. Confirm your
-> understanding of the current state and the watch list. The next
-> action is analyzing the M&M validation run log when I share it —
-> against the gates in HANDOFF4 §7.1 — then freezing the M&M golden
-> and opening the UI + mapping era.
+> five Round logs + the citation-labels log), then skim
+> GENERALIZATION_PLAN.md. Confirm your understanding of the current
+> state and the watch list. Goldens: SONA v22, M&M v5 (both frozen).
+> The next action is the AR optimisation (§7.2), then the UI + mapping
+> era.
+
+Note for that session: SONA's golden v22 predates citation labels. It
+is still a valid baseline (the fingerprint is block/claim counts, not
+citation text), but the first SONA run after any further change will
+show its citations relabelled — that is expected, not drift.
 
 The project memory (auto-loaded) carries the compressed state; where
 memory and this file disagree, this file wins (newer and complete).

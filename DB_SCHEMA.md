@@ -125,7 +125,7 @@ Dedup in `save_entity_relationship` on (from, to, type).
 | company_id | uuid | |
 | version | int4 | auto-incremented per company |
 | generated_at | timestamptz | |
-| sections_json | jsonb | **typed blocks — the future UI renders this** |
+| sections_json | jsonb | **typed blocks — the future UI renders this**; also carries `quality`, `envelope_contract_version`, the run manifest and `citation_map` (below) |
 | based_on_macro_version / based_on_industry_version / based_on_company_version | int4? | layer-version pins (industry = sector layer) |
 
 ### `runs` — run observability (aggregates only)
@@ -152,6 +152,18 @@ local sidecar files `data/telemetry/{run_id}.json`, NOT this table.
    the offender as verification_status='failed'). Additionally,
    `run_section` (s4_synth) only accepts uuids present in **this
    run's** evidence pool — merely existing in the DB is not enough.
+   **Nodes cite run-scoped LABELS, not uuids** (`src/pipeline/
+   citations.py`): `run_section` resolves label → uuid *before*
+   `save_claims`, so what reaches the DB is uuids and only uuids. An
+   unresolvable label is stripped exactly like a bad uuid was.
+1b. **Citation labels are run-scoped and are NEVER stored per-document.**
+   A label depends on the whole run pool (including rehydrated
+   macro/industry rows), so a label written into an `extract:{doc_id}`
+   entry would be wrong on the next run. The run's map is persisted
+   once, with the report, as `report_versions.sections_json.citation_map`
+   = `{"labels": {label: evidence_uuid}, "documents": [...]}`. That is
+   what keeps a stored report re-resolvable after the fact, and what
+   the UI reads for footnote markers. jsonb — no DDL.
 2. **Append-only observed facts.** Re-reads must not duplicate or
    overwrite: `save_source_document` dedups by content_hash;
    `save_evidence` by (doc, text); metric upserts ignore conflicts.

@@ -170,6 +170,7 @@ def validate_envelope(env: dict) -> list:
 
 def composer_node(state) -> dict:
     profile, comp = state["profile"], state.get("computed", {})
+    citation_labels = state.get("citation_labels") or {}
     evidence_ids = {e["id"] for e in state.get("evidence_pool", [])}
     calc_ids = set(comp.get("computed_financials", {}).keys()) | {
         "peer_table", "valuation_context", "guidance_scorecard"} | {
@@ -205,8 +206,13 @@ def composer_node(state) -> dict:
         # brackets too; strip them before matching
         c = str(cite).strip().strip("[]")
         ok = False
-        if c in evidence_ids or c.startswith("mem_"):
+        # Citation labels FIRST: "AR.17" has the same <X>.<y> shape as a
+        # bare upstream block id, so the exact-match label lookup has to
+        # win before the sec:/block-id paths get a chance at it.
+        if c in citation_labels:
             ok = True
+        elif c in evidence_ids or c.startswith("mem_"):
+            ok = True                       # retained uuid fallback
         elif c.startswith("calc:"):
             body = c[5:]
             ok = body in calc_ids or body.split(".")[0] in calc_ids
@@ -220,10 +226,10 @@ def composer_node(state) -> dict:
         elif c.startswith("event:"):
             ok = c[6:] in event_ids
         elif c.startswith("evidence:"):
-            # full uuid OR unique 8-hex prefix (models write both forms;
-            # the bare-prefix path below never saw prefixed ones)
+            # a label, a full uuid, OR a unique 8-hex prefix (models write
+            # every form; the bare-prefix path below never saw prefixed ones)
             body = c.split(":", 1)[1]
-            ok = body in evidence_ids or (
+            ok = body in citation_labels or body in evidence_ids or (
                 re.fullmatch(r"[0-9a-f]{8,}", body) is not None
                 and prefix_index.get(body[:8], 0) == 1)
         elif c in block_ids:
@@ -313,16 +319,26 @@ def composer_node(state) -> dict:
             continue
         _render_env(env, letter)
 
-    # K
+    # K — the citation LEGEND: every label in the report resolves here.
+    # (Ordered by the label assignment, so company primaries come first
+    # and the numbered tail follows in citation order.)
     lines.append("## K. Sources & Provenance")
     lines.append("")
-    by_url = {}
-    for e in state.get("evidence_pool", []):
-        by_url.setdefault(e["url"], {"title": e["title"], "doc_class": e["doc_class"],
-                                     "count": 0})["count"] += 1
-    for url, meta in sorted(by_url.items(), key=lambda kv: kv[1]["doc_class"]):
-        lines.append(f"- **{meta['title']}** ({meta['doc_class']}, "
-                     f"{meta['count']} evidence rows) — {url}")
+    docs = state.get("citation_docs") or []
+    if docs:
+        for d in docs:
+            lines.append(f"- **[{d['label']}]** {d['title']} "
+                         f"({d['doc_class']}, {d['rows']} evidence rows) — "
+                         f"{d['url']}")
+    else:
+        by_url = {}
+        for e in state.get("evidence_pool", []):
+            by_url.setdefault(e["url"], {"title": e["title"],
+                                         "doc_class": e["doc_class"],
+                                         "count": 0})["count"] += 1
+        for url, meta in sorted(by_url.items(), key=lambda kv: kv[1]["doc_class"]):
+            lines.append(f"- **{meta['title']}** ({meta['doc_class']}, "
+                         f"{meta['count']} evidence rows) — {url}")
     verif = state.get("verification") or {}
     supported = sum(1 for v in verif.values() if v["verdict"] == "supported")
     lines.append("")
@@ -351,6 +367,14 @@ def composer_node(state) -> dict:
         sections_json["quality"] = {**stats, "verified_supported": supported,
                                     "verified_total": len(verif)}
         sections_json["envelope_contract_version"] = ENVELOPE_CONTRACT_VERSION
+        # The run's citation labels ride WITH the report: labels are
+        # run-scoped (they depend on the whole pool), so without this a
+        # stored report could not be re-resolved later — and the UI needs
+        # exactly this map to render footnote markers. No DDL: jsonb.
+        sections_json["citation_map"] = {
+            "labels": citation_labels,           # label -> evidence uuid
+            "documents": state.get("citation_docs") or [],
+        }
         try:
             _, version = db.save_report_version(profile["entity_id"], sections_json)
             print(f"[s8_composer] saved report_versions v{version}")

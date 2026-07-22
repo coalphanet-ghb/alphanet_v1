@@ -1,136 +1,138 @@
 {
   "fingerprint": {
-    "claim_checks": 19,
+    "claim_checks": 13,
     "quality": {
-      "total": 526,
-      "unresolved": 4,
-      "verified_supported": 188,
-      "verified_total": 200
+      "total": 499,
+      "unresolved": 6,
+      "verified_supported": 160,
+      "verified_total": 187
     },
     "sections": {
       "B": {
         "blocks": {
-          "flag": 2,
           "metric_card": 2,
-          "narrative": 5,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 20,
+        "insufficiencies": 8
+      },
+      "C": {
+        "blocks": {
+          "metric_card": 1,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 29,
+        "insufficiencies": 8
+      },
+      "D": {
+        "blocks": {
+          "flag": 5,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 2
+        },
+        "claims": 13,
+        "insufficiencies": 15
+      },
+      "D1": {
+        "blocks": {
+          "flag": 1,
+          "metric_card": 1,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 22,
+        "insufficiencies": 7
+      },
+      "D2": {
+        "blocks": {
+          "flag": 7,
+          "metric_card": 1,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 13,
+        "insufficiencies": 6
+      },
+      "D3": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 1,
+          "narrative": 3,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 8,
+        "insufficiencies": 6
+      },
+      "E": {
+        "blocks": {
+          "flag": 3,
+          "metric_card": 1,
+          "narrative": 4,
+          "ranked_list": 1,
+          "table": 1
+        },
+        "claims": 29,
+        "insufficiencies": 9
+      },
+      "F": {
+        "blocks": {
+          "flag": 6,
+          "metric_card": 2,
+          "narrative": 2,
           "ranked_list": 1,
           "table": 1
         },
         "claims": 25,
         "insufficiencies": 8
       },
-      "C": {
-        "blocks": {
-          "flag": 2,
-          "metric_card": 1,
-          "narrative": 4,
-          "ranked_list": 1,
-          "table": 1
-        },
-        "claims": 18,
-        "insufficiencies": 8
-      },
-      "D": {
-        "blocks": {
-          "narrative": 5,
-          "table": 2
-        },
-        "claims": 14,
-        "insufficiencies": 11
-      },
-      "D1": {
-        "blocks": {
-          "flag": 4,
-          "metric_card": 3,
-          "narrative": 3,
-          "ranked_list": 1,
-          "table": 2
-        },
-        "claims": 18,
-        "insufficiencies": 10
-      },
-      "D2": {
-        "blocks": {
-          "flag": 3,
-          "metric_card": 1,
-          "narrative": 4,
-          "table": 1
-        },
-        "claims": 20,
-        "insufficiencies": 7
-      },
-      "D3": {
-        "blocks": {
-          "flag": 2,
-          "metric_card": 1,
-          "narrative": 4,
-          "ranked_list": 1,
-          "table": 1
-        },
-        "claims": 18,
-        "insufficiencies": 5
-      },
-      "E": {
-        "blocks": {
-          "flag": 6,
-          "metric_card": 1,
-          "narrative": 4,
-          "table": 1
-        },
-        "claims": 23,
-        "insufficiencies": 10
-      },
-      "F": {
-        "blocks": {
-          "flag": 5,
-          "metric_card": 2,
-          "narrative": 2,
-          "ranked_list": 1,
-          "table": 1
-        },
-        "claims": 20,
-        "insufficiencies": 11
-      },
       "G": {
         "blocks": {
-          "flag": 1,
+          "flag": 2,
           "metric_card": 1,
-          "narrative": 3,
+          "narrative": 4,
           "table": 1
         },
-        "claims": 13,
-        "insufficiencies": 7
+        "claims": 11,
+        "insufficiencies": 6
       },
       "H": {
         "blocks": {
-          "narrative": 3,
+          "metric_card": 1,
+          "narrative": 2,
           "ranked_list": 1
         },
-        "claims": 18,
-        "insufficiencies": 11
+        "claims": 20,
+        "insufficiencies": 10
       },
       "I": {
         "blocks": {
-          "flag": 1,
           "metric_card": 2,
           "narrative": 7,
           "table": 1
         },
         "claims": 20,
-        "insufficiencies": 10
+        "insufficiencies": 5
       },
       "J": {
         "blocks": {
           "narrative": 1,
           "ranked_list": 3
         },
-        "claims": 20,
-        "insufficiencies": 6
+        "claims": 12,
+        "insufficiencies": 5
       }
     }
   },
-  "frozen_at": "2026-07-18T16:27:25.200692+00:00",
-  "report_version_id": "b6aa96ce-6b38-463d-9689-b04d4fd200b0",
+  "frozen_at": "2026-07-22T11:27:12.967617+00:00",
+  "report_version_id": "654ec874-fee1-4fd6-a196-30514e15567f",
   "ticker": "M&M",
-  "version": 3
+  "version": 5
 }

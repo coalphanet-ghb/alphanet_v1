@@ -1,0 +1,328 @@
+{
+ "run_id": "d3e2e90b-2a64-4b91-84c0-5ffaa4aee20f",
+ "nodes": {
+  "s2:investor_presentation": {
+   "calls": 1,
+   "in": 11955,
+   "out": 18226,
+   "cached_in": 0,
+   "latency_s": 212.39246129995445,
+   "cost_usd": 0.04649019,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:annual_report": {
+   "calls": 9,
+   "in": 2409422,
+   "out": 286363,
+   "cached_in": 2141165,
+   "latency_s": 1053.7895236999611,
+   "cost_usd": 1.9523170699999999,
+   "spirals": 0,
+   "truncations": 3
+  },
+  "s2:concall_May 2026": {
+   "calls": 1,
+   "in": 23677,
+   "out": 8928,
+   "cached_in": 0,
+   "latency_s": 40.36528530000942,
+   "cost_usd": 0.03257467,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_Feb 2026": {
+   "calls": 1,
+   "in": 18518,
+   "out": 14668,
+   "cached_in": 0,
+   "latency_s": 61.388079199998174,
+   "cost_usd": 0.04230782,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_Nov 2025": {
+   "calls": 1,
+   "in": 16834,
+   "out": 11415,
+   "cached_in": 0,
+   "latency_s": 48.88248420000309,
+   "cost_usd": 0.034257550000000005,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_Aug 2025": {
+   "calls": 1,
+   "in": 11563,
+   "out": 9312,
+   "cached_in": 0,
+   "latency_s": 41.66531589999795,
+   "cost_usd": 0.02675293,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_0": {
+   "calls": 1,
+   "in": 4023,
+   "out": 5095,
+   "cached_in": 0,
+   "latency_s": 26.03474189998815,
+   "cost_usd": 0.0133707,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_1": {
+   "calls": 1,
+   "in": 7410,
+   "out": 4312,
+   "cached_in": 0,
+   "latency_s": 21.289151300035883,
+   "cost_usd": 0.013518780000000001,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_2": {
+   "calls": 2,
+   "in": 2695,
+   "out": 3488,
+   "cached_in": 0,
+   "latency_s": 20.43181460001506,
+   "cost_usd": 0.00610924,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:litigation": {
+   "calls": 2,
+   "in": 24729,
+   "out": 4429,
+   "cached_in": 0,
+   "latency_s": 20.625746999983676,
+   "cost_usd": 0.020353310000000003,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:concall_trails": {
+   "calls": 1,
+   "in": 7733,
+   "out": 5253,
+   "cached_in": 0,
+   "latency_s": 26.372142600012012,
+   "cost_usd": 0.015757220000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_B": {
+   "calls": 1,
+   "in": 8457,
+   "out": 11085,
+   "cached_in": 0,
+   "latency_s": 68.8495602000039,
+   "cost_usd": 0.0289275,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D1": {
+   "calls": 1,
+   "in": 18204,
+   "out": 14176,
+   "cached_in": 0,
+   "latency_s": 84.54026280000107,
+   "cost_usd": 0.04105764,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D3": {
+   "calls": 1,
+   "in": 8821,
+   "out": 4787,
+   "cached_in": 0,
+   "latency_s": 38.344840899982955,
+   "cost_usd": 0.015335079999999997,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D2": {
+   "calls": 1,
+   "in": 8285,
+   "out": 6266,
+   "cached_in": 114,
+   "latency_s": 38.51020770001924,
+   "cost_usd": 0.01827929,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_E": {
+   "calls": 1,
+   "in": 10207,
+   "out": 11206,
+   "cached_in": 0,
+   "latency_s": 61.94630040001357,
+   "cost_usd": 0.03015499,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s4d_followup": {
+   "calls": 1,
+   "in": 5156,
+   "out": 959,
+   "cached_in": 0,
+   "latency_s": 6.273509600025136,
+   "cost_usd": 0.00493601,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D": {
+   "calls": 1,
+   "in": 17147,
+   "out": 7702,
+   "cached_in": 1263,
+   "latency_s": 39.04412150004646,
+   "cost_usd": 0.026298230000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_F": {
+   "calls": 1,
+   "in": 20514,
+   "out": 19637,
+   "cached_in": 114,
+   "latency_s": 89.08526469999924,
+   "cost_usd": 0.05428773,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_G": {
+   "calls": 1,
+   "in": 8533,
+   "out": 5537,
+   "cached_in": 0,
+   "latency_s": 81.4115764000453,
+   "cost_usd": 0.01681918,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_H": {
+   "calls": 1,
+   "in": 20635,
+   "out": 8910,
+   "cached_in": 0,
+   "latency_s": 56.133628399984445,
+   "cost_usd": 0.03086215,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_C": {
+   "calls": 1,
+   "in": 25106,
+   "out": 12748,
+   "cached_in": 0,
+   "latency_s": 66.23492109996732,
+   "cost_usd": 0.04172642,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_I": {
+   "calls": 1,
+   "in": 14301,
+   "out": 25791,
+   "cached_in": 0,
+   "latency_s": 204.77250280004228,
+   "cost_usd": 0.06434784,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_J": {
+   "calls": 1,
+   "in": 20473,
+   "out": 21715,
+   "cached_in": 0,
+   "latency_s": 96.83524119999493,
+   "cost_usd": 0.058816,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s9_verifier": {
+   "calls": 10,
+   "in": 32917,
+   "out": 30299,
+   "cached_in": 1118,
+   "latency_s": 176.31120760011254,
+   "cost_usd": 0.08445915999999999,
+   "spirals": 0,
+   "truncations": 0
+  }
+ },
+ "extra": {
+  "verifier": {
+   "claims_checked": 185,
+   "not_fully_supported": 28,
+   "by_verdict": {
+    "supported": 157,
+    "partial": 18,
+    "unsupported": 7,
+    "contradicted": 3
+   },
+   "batches": 10,
+   "tasks_total": 185
+  },
+  "manifest": {
+   "report_path": "data/reports\\M_M_20260722_095843.md",
+   "envelope_contract_version": "1.0.0",
+   "citations_total": 397,
+   "citations_unresolved": 4,
+   "verified_supported": 157,
+   "verified_total": 185,
+   "schema_issues": {},
+   "sections": {
+    "B": {
+     "blocks": 10,
+     "claims": 27
+    },
+    "C": {
+     "blocks": 8,
+     "claims": 24
+    },
+    "D": {
+     "blocks": 8,
+     "claims": 12
+    },
+    "D1": {
+     "blocks": 8,
+     "claims": 25
+    },
+    "D2": {
+     "blocks": 13,
+     "claims": 20
+    },
+    "D3": {
+     "blocks": 7,
+     "claims": 13
+    },
+    "E": {
+     "blocks": 11,
+     "claims": 25
+    },
+    "F": {
+     "blocks": 12,
+     "claims": 18
+    },
+    "G": {
+     "blocks": 7,
+     "claims": 12
+    },
+    "H": {
+     "blocks": 5,
+     "claims": 22
+    },
+    "I": {
+     "blocks": 10,
+     "claims": 20
+    },
+    "J": {
+     "blocks": 4,
+     "claims": 20
+    }
+   }
+  }
+ }
+}

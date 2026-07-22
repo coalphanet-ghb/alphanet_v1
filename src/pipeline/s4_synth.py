@@ -9,8 +9,12 @@ import re
 
 from src import db
 from src.llm import generate_json, set_current_node, note_wasted_output
+from src.pipeline import citations
 from src.specs import assemble_prompt
 
+# Retained fallback: nodes cite LABELS now (src/pipeline/citations.py), but
+# a raw uuid still resolves. Delete this and the uuid paths below once the
+# label scheme has a few clean runs behind it.
 _UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
@@ -27,7 +31,7 @@ def _evidence(state, doc_classes, max_chars=15000, tagged=None,
     def _fill(entries):
         nonlocal used
         for e in entries:
-            entry = f"[{e['id']}] ({e['doc_class']}; {e['title']}" + \
+            entry = f"[{e.get('label') or e['id']}] ({e['doc_class']}; {e['title']}" + \
                     (f"; {e.get('date')}" if e.get("date") else "") + \
                     (f"; {e['page']}" if e.get("page") else "") + \
                     f")\n{e['text']}\n"
@@ -148,7 +152,7 @@ def _peer_packs(state, per_peer_chars=2000) -> str:
         for e in state.get("evidence_pool", []):
             hay = e["text"].lower() + " " + (e.get("title") or "").lower()
             if any(k in hay for k in keys):
-                entry = f"  [{e['id']}] {e['text'][:400]}"
+                entry = f"  [{e.get('label') or e['id']}] {e['text'][:400]}"
                 if used + len(entry) > per_peer_chars:
                     break
                 hits.append(entry)
@@ -190,38 +194,46 @@ def _trails_labeled(state, cap=20) -> str:
 
 _INLINE_EV_RE = re.compile(
     r"\s*\[(?:evidence:)?[0-9a-f]{8}(?:[0-9a-f-]{0,28})?\]")
+_INLINE_LABEL_RE = re.compile(r"\s*\[([A-Za-z0-9][A-Za-z0-9.\-]*)\]")
 
 
-def _strip_inline_evidence(md: str) -> str:
-    """Remove inline evidence-uuid markers ([<uuid>], [evidence:8hex])
-    from upstream prose before it reaches a downstream node: a section
-    must cite upstream findings as sec:<X>.<id>, never re-cite evidence
-    uuids it was not given — leaving the raw markers in summaries is how
-    section I once copied H's ids wholesale (2026-07-21 run, 38
-    unresolved citations). [sec:]/[calc:]/[edge:]/[trail:] labels are
-    kept (they resolve globally)."""
-    return _INLINE_EV_RE.sub("", md or "")
+def _strip_inline_evidence(md: str, labels=None) -> str:
+    """Remove inline evidence markers from upstream prose before it
+    reaches a downstream node: a section must cite upstream findings as
+    sec:<X>.<id>, never re-cite evidence it was not given — leaving the
+    raw markers in summaries is how section I once copied H's ids
+    wholesale (2026-07-21 run, 38 unresolved citations).
+    [sec:]/[calc:]/[edge:]/[trail:]/[event:] labels are KEPT (they
+    resolve globally). Citation labels are matched EXACTLY against this
+    run's label map rather than by shape — a bare [47] is an evidence
+    marker, but only if 47 is actually a label."""
+    out = _INLINE_EV_RE.sub("", md or "")     # legacy uuid markers
+    if labels:
+        out = _INLINE_LABEL_RE.sub(
+            lambda m: "" if m.group(1) in labels else m.group(0), out)
+    return out
 
 
-def _envelope_summary(env: dict, max_chars=4000) -> str:
+def _envelope_summary(state, env: dict, max_chars=4000) -> str:
     """Upstream findings, each labelled with the exact citation form the
     reader must use (sec:<LETTER>.<block_id>) — models were citing these
-    numbers to evidence uuids they never read (Phase 2.1/3b)."""
+    numbers to evidence they never read (Phase 2.1/3b)."""
     if not env:
         return "(missing)"
+    labels = state.get("citation_labels") or {}
     letter = env.get("section", "?")
     parts = []
     for b in env.get("blocks", []):
         ref = f"sec:{letter}.{b.get('id')}"
         if b.get("type") == "narrative":
-            parts.append(f"[{ref}] {_strip_inline_evidence(b.get('md', ''))}")
+            parts.append(f"[{ref}] {_strip_inline_evidence(b.get('md', ''), labels)}")
         elif b.get("type") == "ranked_list":
             for it in b.get("items", []):
                 parts.append(f"[{ref}] #{it.get('rank')} {it.get('title')}: "
-                             f"{_strip_inline_evidence(it.get('md', ''))}")
+                             f"{_strip_inline_evidence(it.get('md', ''), labels)}")
         elif b.get("type") == "flag":
             parts.append(f"[{ref}] FLAG({b.get('status')}) "
-                         f"{_strip_inline_evidence(b.get('md', ''))}")
+                         f"{_strip_inline_evidence(b.get('md', ''), labels)}")
         elif b.get("type") == "metric_card":
             for m in b.get("metrics", []):
                 parts.append(f"[{ref}] {m.get('name')}: {m.get('value')} "
@@ -234,14 +246,23 @@ def _insufficiencies(state) -> str:
                      state.get("computed", {}).get("insufficiencies", [])) or "(none)"
 
 
-def _checks_json(checks, cap: int) -> str:
+def _checks_json(state, checks, cap: int) -> str:
     """claim_checks rendered for prompts WITHOUT uuid-shaped junk: the
     audit-trail `evidence_id_raw` (a mangled id s4d nulled and kept for
     the audit trail only) leaked into F/H citations two runs straight
     (f4ba4117…) — downstream nodes must never see uuid-shaped strings
-    that are not in the run's pool."""
-    clean = [{k: v for k, v in c.items() if k != "evidence_id_raw"}
-             for c in checks]
+    that are not in the run's pool. s4d resolves `evidence_id` to a uuid
+    for s9's benefit, so it is mapped BACK to the citation label here:
+    the only evidence ids a synthesis node ever sees are labels."""
+    label_of = {uid: lab for lab, uid
+                in (state.get("citation_labels") or {}).items()}
+    clean = []
+    for c in checks:
+        row = {k: v for k, v in c.items() if k != "evidence_id_raw"}
+        if row.get("evidence_id"):
+            row["evidence_id"] = label_of.get(row["evidence_id"],
+                                              row["evidence_id"])
+        clean.append(row)
     return json.dumps(clean, default=str)[:cap] or "(none)"
 
 
@@ -295,16 +316,25 @@ def run_section(state, node_id: str, letter: str, context: dict) -> dict:
         entry_id = db.save_knowledge_entry(
             "company", state["profile"]["entity_id"], f"section_{letter}",
             env, generated_by_run_id=state.get("run_id") or None)
-        # Contract rule 3: a claim may only cite uuids it was GIVEN — the
-        # run's evidence pool, not merely any row that exists in the DB.
-        # Mangled/invented ids are stripped; a claim left without a single
-        # valid id is not persisted (nothing to verify it against).
+        # Contract rule 3: a claim may only cite passages it was GIVEN —
+        # this run's evidence pool, not merely any row that exists in the
+        # DB. Citations arrive as LABELS and are resolved to uuids here:
+        # the DB stores uuids and only uuids (claims.evidence_ids is
+        # uuid[], schema frozen). An invented label resolves to nothing
+        # and is stripped; a claim left without a single valid id is not
+        # persisted (nothing to verify it against).
+        labels = state.get("citation_labels") or {}
         pool_ids = {str(e["id"]) for e in state.get("evidence_pool", [])}
         claims, sources, stripped, skipped_claims = [], [], 0, 0
         for c in env.get("claims", []):
-            ev_ids = [i for i in c.get("evidence_ids", []) if _UUID_RE.match(str(i))]
-            valid = [i for i in ev_ids if str(i) in pool_ids]
-            stripped += len(ev_ids) - len(valid)
+            valid = []
+            for i in c.get("evidence_ids", []) or []:
+                uid = citations.to_uuid(i, labels, pool_ids)
+                if uid:
+                    if uid not in valid:
+                        valid.append(uid)
+                elif citations.is_evidence_shaped(i):
+                    stripped += 1      # invented / mangled label
             if not valid:
                 skipped_claims += 1
                 continue
@@ -312,9 +342,9 @@ def run_section(state, node_id: str, letter: str, context: dict) -> dict:
                            "confidence": c.get("confidence")})
             sources.append(c)      # env claim behind each persisted row
         if stripped or skipped_claims:
-            print(f"  [synth_{letter}] {stripped} claim evidence id(s) not in "
-                  f"pool stripped; {skipped_claims} claim(s) left id-less — "
-                  f"not persisted")
+            print(f"  [synth_{letter}] {stripped} claim citation(s) did not "
+                  f"resolve to a pooled passage; {skipped_claims} claim(s) "
+                  f"left id-less — not persisted")
         if claims:
             try:
                 ids = db.save_claims(entry_id, claims, strict=False)
@@ -420,19 +450,25 @@ def s4d_node(state):
     run — an unanswerable request is answered as such."""
     set_current_node("s4d_followup")      # Round 1: per-node telemetry
     checks, followups = [], []
+    labels = state.get("citation_labels") or {}
     pool_ids = {e["id"] for e in state.get("evidence_pool", [])}
     bad_ids = 0
     for sub in ("D1", "D2", "D3"):
         env = state.get(f"envelope_{sub}") or {}
         for c in env.get("claim_checks") or []:
             c["statement"] = sub
-            # models occasionally mangle an evidence uuid; a bad id here
+            # the statement nodes cite labels; store the resolved UUID so
+            # s9 can look the passage up. An unresolvable label here
             # propagates into F/H citations and fails resolution — null it
             # (keep the raw value for the audit trail)
-            if c.get("evidence_id") and c["evidence_id"] not in pool_ids:
-                c["evidence_id_raw"] = c.pop("evidence_id")
-                c["evidence_id"] = None
-                bad_ids += 1
+            if c.get("evidence_id"):
+                uid = citations.to_uuid(c["evidence_id"], labels, pool_ids)
+                if uid:
+                    c["evidence_id"] = uid
+                else:
+                    c["evidence_id_raw"] = c.pop("evidence_id")
+                    c["evidence_id"] = None
+                    bad_ids += 1
             checks.append(c)
         reqs = env.get("followup_requests") or []
         if len(reqs) > 2:
@@ -471,7 +507,8 @@ def s4d_node(state):
                 r["answer"] = "(no passages matched the keywords)"
         else:
             from src.specs import load_instructions
-            passages = "\n\n".join(f"[{e['id']}] ({e['doc_class']}; {e['title']})\n"
+            passages = "\n\n".join(f"[{e.get('label') or e['id']}] "
+                                   f"({e['doc_class']}; {e['title']})\n"
                                    f"{e['text'][:500]}" for e in selected)
             questions = "\n".join(f"idx {i}: {r.get('request', '')}"
                                   for i, r in enumerate(ev_reqs))
@@ -505,13 +542,13 @@ def d_node(state):
     return run_section(state, "s4_financials", "D", {
         "COMPANY": state["profile"]["name"],
         "SECTION D1 FINDINGS (P&L — cite as sec:D1.<block_id>)":
-            _envelope_summary(state.get("envelope_D1"), 8000),
+            _envelope_summary(state, state.get("envelope_D1"), 8000),
         "SECTION D2 FINDINGS (Balance Sheet — cite as sec:D2.<block_id>)":
-            _envelope_summary(state.get("envelope_D2"), 8000),
+            _envelope_summary(state, state.get("envelope_D2"), 8000),
         "SECTION D3 FINDINGS (Cash Flow — cite as sec:D3.<block_id>)":
-            _envelope_summary(state.get("envelope_D3"), 8000),
+            _envelope_summary(state, state.get("envelope_D3"), 8000),
         "CLAIM CHECKS (pooled — the scoreboard's rows, render ALL)":
-            _checks_json(checks, 8000),
+            _checks_json(state, checks, 8000),
         "FOLLOW-UP ANSWERS":
             json.dumps(followups, default=str)[:4000],
         "COMPUTED FINANCIALS (cross-statement calcs)": _computed(state),
@@ -546,11 +583,11 @@ def f_node(state):
         "CLAIMS-VS-NUMBERS SCOREBOARD (statement forensics tested management "
         "claims against computed numbers — weigh non-corroborated verdicts "
         "in the credibility assessment, citing sec:D.<scoreboard block>)":
-            _checks_json(checks, 6000),
+            _checks_json(state, checks, 6000),
         "CREDIBILITY NOTES (from financial synthesis)":
             "\n".join(f"- {n}" for n in cred) or "(none)",
         "SECTION D SUMMARY (integrated financials)":
-            _envelope_summary(state.get("envelope_D")),
+            _envelope_summary(state, state.get("envelope_D")),
         "GUIDANCE SCORECARD (calc — the join of past guidance vs actuals)":
             _computed(state, keys=("guidance_scorecard",)),
         "GUIDANCE EVOLUTION (cross-quarter trails — the guidance record)":
@@ -578,7 +615,7 @@ def g_node(state):
         "PEER MENTIONS (tagged in sources)": _pool(state, "peer_mentions"),
         "SECTOR PRINTS (share data)": _evidence(state, ["sector_page"], 6000),
         "SECTION D SUMMARY (company-side consistency)":
-            _envelope_summary(state.get("envelope_D"), 10000),
+            _envelope_summary(state, state.get("envelope_D"), 10000),
     })
 
 
@@ -593,7 +630,7 @@ def h_node(state):
         "COMPANY": state["profile"]["name"],
         "NON-CORROBORATED MANAGEMENT CLAIMS (from statement forensics — "
         "contradicted claims are risk candidates; cite the claim's evidence "
-        "uuid or sec:D block)": _checks_json(non_corr, 4000),
+        "label or sec:D block)": _checks_json(state, non_corr, 4000),
         "D RISK CANDIDATES (from financial synthesis)":
             json.dumps(d_risk, default=str)[:3000] or "(none)",
         "RISK-TAGGED EVIDENCE (pooled from ALL reads)":
@@ -602,8 +639,8 @@ def h_node(state):
             state, ["rating_rationale", "valuepickr", "news_batch"], 20000),
         "FORENSIC FLAGS": _flags(state),
         "PEER WORST-CELLS (from G)": g_risk,
-        "SECTION G SUMMARY": _envelope_summary(state.get("envelope_G"), 10000),
-        "SECTION D SUMMARY": _envelope_summary(state.get("envelope_D"), 10000),
+        "SECTION G SUMMARY": _envelope_summary(state, state.get("envelope_G"), 10000),
+        "SECTION D SUMMARY": _envelope_summary(state, state.get("envelope_D"), 10000),
         "ENTITY GRAPH EDGES": _edges_labeled(state),
     })
 
@@ -621,9 +658,9 @@ def c_node(state):
             _evidence(state, ["macro_page"], 40000),
         "ENTITY GRAPH (this company's dependencies — from E and seeds)": edges,
         "SECTION E SUMMARY (dependencies found)":
-            _envelope_summary(state.get("envelope_E"), 10000),
+            _envelope_summary(state, state.get("envelope_E"), 10000),
         "SECTION D SUMMARY (computed sensitivities context)":
-            _envelope_summary(state.get("envelope_D"), 10000),
+            _envelope_summary(state, state.get("envelope_D"), 10000),
         "COMPUTED": _computed(state, slice_="vitals"),
     })
 
@@ -635,13 +672,13 @@ def i_node(state):
         "pe_1y_path, pb, pe_own_history)":
             _computed(state, keys=("valuation_context",)),
         "SECTION H SUMMARY (the year's risk events — candidate explanations "
-        "for multiple moves)": _envelope_summary(state.get("envelope_H"), 8000),
+        "for multiple moves)": _envelope_summary(state, state.get("envelope_H"), 8000),
         "GUIDANCE EVOLUTION (cross-quarter management guidance trail)":
             _trails_labeled(state),
         "PEER TABLE": _computed(state, keys=("peer_table",)),
-        "SECTION D SUMMARY (growth/returns)": _envelope_summary(state.get("envelope_D"), 10000),
-        "SECTION G SUMMARY": _envelope_summary(state.get("envelope_G"), 10000),
-        "SECTION C SUMMARY (cycle position)": _envelope_summary(state.get("envelope_C"), 10000),
+        "SECTION D SUMMARY (growth/returns)": _envelope_summary(state, state.get("envelope_D"), 10000),
+        "SECTION G SUMMARY": _envelope_summary(state, state.get("envelope_G"), 10000),
+        "SECTION C SUMMARY (cycle position)": _envelope_summary(state, state.get("envelope_C"), 10000),
         "KNOWN GAPS": _insufficiencies(state),
     })
 
@@ -651,6 +688,6 @@ def j_node(state):
     # Phase 5.1: J receives the FULL envelopes (1M-context budget)
     for letter in "BCDEFGHI":
         sections[f"SECTION {letter}"] = _envelope_summary(
-            state.get(f"envelope_{letter}"), 100000)
+            state, state.get(f"envelope_{letter}"), 100000)
     sections["COMPANY"] = state["profile"]["name"]
     return run_section(state, "s8_takeaways", "J", sections)

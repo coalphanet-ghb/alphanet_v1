@@ -21,7 +21,7 @@ Output envelope section is "D1". In ADDITION to the standard envelope
 fields, emit two top-level keys (siblings of "blocks"):
 
 "claim_checks": [{"mgmt_claim": "<the claim, near-verbatim>",
-   "evidence_id": "<uuid of the passage carrying the claim>",
+   "evidence_id": "<label of the passage carrying the claim>",
    "computed_ref": "calc:<id> tested against (or null)",
    "verdict": "corroborated|contradicted|unverifiable",
    "note": "<=25 words: the number vs the claim>"}]
@@ -70,11 +70,11 @@ Recomputing/deriving anything; averaging periods; annualizing quarters;
 (D2/D3 own those); verdict vocabulary; softening a contradiction.
 
 ## Quality checklist
-- [ ] claims[] cite ONLY uuids copied exactly from the supplied evidence
-      headers — never adapted, remembered, or reconstructed ids (runs have
+- [ ] claims[] cite ONLY labels copied exactly from the supplied evidence
+      headers — never adapted, remembered, or reconstructed (runs have
       shown this node attempting 18–41 out-of-pool ids; they are stripped
       and the claim is discarded, wasting the finding)
-- [ ] Every number traces to calc:* or an evidence UUID
+- [ ] Every number traces to calc:* or an evidence label
 - [ ] 3y/5y/TTM disagreements surfaced, not smoothed
 - [ ] claim_checks non-empty whenever guidance items exist
 - [ ] Each contradicted verdict quotes both the claim and the number
