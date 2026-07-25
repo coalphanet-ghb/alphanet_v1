@@ -235,6 +235,31 @@ without a documented incident.
 9. Cosmetic: M&M's own screener label renders `S-M26M` (URL-encoded
    `M%26M` slug). One line in `citations._doc_mnemonic` whenever.
 
+Added 2026-07-26 while planning the daily market-data job (see
+`DAILY_MARKET_DATA_PLAN.md`); both are **deferred, not fixed** —
+neither blocks that job, and each needs its own `diff_golden` cycle:
+
+7. **`screener_parser.py:110` stamps `date.today()`** on the seven
+   top-card values (`price`, `market_cap`, `pe`, `book_value`,
+   `dividend_yield_pct`, `roce_pct`, `roe_pct`) — the date the scraper
+   ran, not the market close it reflects. A weekend or pre-close run
+   therefore records a phantom trading day. Harmless where it is used
+   today (s3 reads this run's own candidates, so "current price" is
+   simply the price as scraped) and **the daily job sidesteps it
+   entirely** by dating rows from Yahoo's last bar. The residue is that
+   the two writers can disagree by a day or two for the same close.
+   Contained because every consumer that cares queries an explicit
+   `period_end`. Real fix: have the research path resolve its close
+   date from the price series it already fetches.
+8. **Screener-derived ratios are stored as observations.** `pe`,
+   `roce_pct`, `roe_pct` and `dividend_yield_pct` are computed BY
+   screener, yet land in `metric_observations`, which sits awkwardly
+   against invariant 3 (derived ≠ observed). Defensible — screener
+   *prints* them, so they are observed-from-a-source rather than
+   derived-by-us — but if the distinction is ever tightened, these are
+   the rows to revisit. Note they are also the bulk of the day-row
+   churn: 7 rows per research run versus the daily job's 2.
+
 **Closed since the last handoff:** the mangled-uuid class (§2b — models
 cannot transpose hex they are never shown; v5 had zero label failures)
 and the ≤40-word AR-pointer suspicion (M&M v4 came in at 15.1%
@@ -242,7 +267,19 @@ not-fully-supported, back inside the 6–16% band, so the pointer style
 is exonerated — SONA's 3-run elevation was pool-specific. Do NOT ship
 the queued counters: neighbouring excerpts, per-bundle length caps).
 
-## 7. THE ROAD AHEAD (owner-sequenced, updated 2026-07-22)
+## 7. THE ROAD AHEAD (owner-sequenced, updated 2026-07-26)
+
+**IN FLIGHT — daily market data.** The UI era started, and its first
+backend dependency is a daily close + market cap for all 150 Midcap
+constituents, independent of the research swarm (today only ~15
+companies have any price at all, at monthly granularity, and only when
+a run happens to touch their sector). Plan, probes, landmine ledger
+and implementation detail: **`DAILY_MARKET_DATA_PLAN.md`**. It is
+additive — no report changes — except its D0.1 prerequisite, which
+fixes the 1,000-row truncation bug and therefore lands alone with its
+own `diff_golden`. Frontend's asks live in `ui_bridge/PIPELINE_TASKS.md`.
+
+### The standing sequence
 
 **7.1 M&M final validation — DONE (golden v4, then v5).** Result: 6 of
 8 gates passed. PASSED: auto_oem backbone inline (TMCV/HYUNDAI Yahoo

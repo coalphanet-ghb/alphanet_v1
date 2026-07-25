@@ -65,6 +65,27 @@ overwritten** (observed facts are append-only; restatements do not
 update rows). **Derived values (TTM, CAGRs, PE series) are NEVER
 stored here** — they are computed at run time in s3 with full lineage.
 
+**`period_type='day'` rows** come from two writers and mean different
+things — do not conflate them:
+- the **screener top card** on any research run (`price`, `market_cap`,
+  `pe`, `book_value`, `dividend_yield_pct`, `roce_pct`, `roe_pct`),
+  stamped `date.today()` — i.e. the date the SCRAPER RAN, not the
+  close it reflects (`screener_parser.py`, see the HANDOFF4 §6 watch
+  item);
+- the **daily market-data job** (`scripts/daily_market_data.py`), which
+  writes only `price` + `market_cap`, stamped with the AUTHORITATIVE
+  close date taken from Yahoo's last daily bar. Consumers that need a
+  specific trading day (the UI snapshot) must query an explicit
+  `period_end`, never "the latest day row".
+
+Row-count expectations: a fully-researched company carries ~1,000 rows
+(SONA: 634 year / 241 quarter / 85 month / 28 day, across 321 distinct
+metric names — of which 233 appear exactly once: the AR-extraction
+disclosure tail). The daily job adds 2 rows per company per trading day
+(~75K/yr across 150 companies, ~12 MB — trivial). **Never page an
+unbounded `select` against this table** — PostgREST caps at 1,000 rows
+silently (see invariant 9).
+
 ### `entity_relationships` — the entity graph
 | Column | Type | Notes |
 |---|---|---|
@@ -186,6 +207,23 @@ local sidecar files `data/telemetry/{run_id}.json`, NOT this table.
    strings in knowledge_entries, new `relationship_type` /
    `entities.type` values, jsonb `metadata` fields, or local files —
    never DDL.
+9. **PostgREST silently caps unbounded selects at 1,000 rows.** Any
+   query that must return a complete set has to paginate with
+   `.range()` until a short page comes back. Measured 2026-07-26: the
+   table held 8,452 rows and an unbounded `select` returned exactly
+   1,000; SONA alone was at 988 — twelve rows from silently truncating
+   `s3_compute`'s lineage `id_map` and degrading every calc citation to
+   a `mem_` id. Assume any per-entity or table-wide read will cross
+   this line eventually.
+10. **NEVER delete `metric_observations` rows to "clean up".** Computed
+    values carry `inputs[]` arrays of observation row ids, and those
+    ids are persisted in `knowledge_entries` and cited by stored
+    reports. Deleting observations silently orphans the lineage of
+    every historical report that cited them. The long tail of
+    single-occurrence metric names is extraction output, not garbage —
+    it is cheap to keep and unsafe to remove. If volume ever genuinely
+    matters, paginate reads (invariant 9) or narrow what new writers
+    emit; never retro-delete.
 
 ## Where the 2026-07-19 architecture plan touches the DB
 
