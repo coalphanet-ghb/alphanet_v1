@@ -1,5 +1,11 @@
 # HANDOFF 4 — AlphaNet session handoff (2026-07-22)
 
+> **➡️ For CURRENT work, start at `HANDOFF5.md`** (2026-07-27) — the
+> product era and its two sprint plans. **This file remains the
+> authority on the PIPELINE itself**: architecture, how to run and
+> verify, the cost model, the retry policy, and the open watch list.
+> Read it before changing anything under `src/pipeline/`.
+
 > For the next assistant session. The previous sessions (2026-07-21/22)
 > executed the FIVE-ROUND de-clutter plan end to end — telemetry,
 > no-regret cuts, the sector pipeline, Extraction 3.0, synthesis
@@ -194,6 +200,42 @@ All retries are COUNTED in telemetry (spir/trunc columns) — if the
 trend rises, investigate cause; never widen the exception list
 without a documented incident.
 
+### What the spiral data actually says (measured 2026-07-27)
+
+**Location has no pattern; frequency does.** Across the 9 runs with
+per-node telemetry, 8 were spiral-free and one (`dfaaee53`) had two
+(`synth_D1`, `synth_F`) — its immediate rerun on the same inputs was
+clean, so that was sampling, not regression. Pre-telemetry the record
+is explicitly node-agnostic (documented hits on B, C, D2, E, F, H;
+"same nodes fine other runs"; budget-independent, 32K and 64K both
+exhausted). What *did* track reliably is frequency against context
+size and structure: 1–2/run when Phase-5's 40K walls landed, ~0 after
+the Round-5 cuts and contract rule 9. **So treat a spiral as a cost
+event, not a node defect — and treat a rising RATE as a context
+regression.**
+
+**The retry is not really "a fresh sample."** `run_section` re-issues
+the identical system+user at the same default `temperature=0.2`, so a
+context that genuinely drives long reasoning tends to reproduce it —
+which is how `dfaaee53` lost `synth_F` twice (2 × 64,000 output
+tokens, $0.30, no envelope) and aborted the run.
+
+**`reasoning_effort` — probed twice, and the obvious lever is a trap:**
+
+| Setting | Reasoning chars (hard task) | Verdict |
+|---|---|---|
+| default | 1,932 | baseline |
+| `"low"` | **4,373** | **NOT a throttle — more than default.** Do not reach for it |
+| `"none"` | **0** (output still 3,481 chars, `finish=stop`) | the only working lever, and it is binary |
+| `max_reasoning_tokens` | HTTP 400 | unsupported |
+
+If the abort path ever needs closing, the shape that works is
+`reasoning_effort="none"` **on the retry only** — the first attempt
+keeps full quality, and the second becomes structurally incapable of
+spiralling rather than probabilistically unlikely. Not shipped: at one
+abort in nine runs it has not earned a change to the research
+pipeline. Ship it if the rate rises.
+
 ## 6. Watch list (open items, in priority order)
 
 1. **Rating-rationale discovery pulls the WRONG ENTITY.** M&M v5
@@ -277,7 +319,26 @@ a run happens to touch their sector). Plan, probes, landmine ledger
 and implementation detail: **`DAILY_MARKET_DATA_PLAN.md`**. It is
 additive — no report changes — except its D0.1 prerequisite, which
 fixes the 1,000-row truncation bug and therefore lands alone with its
-own `diff_golden`. Frontend's asks live in `ui_bridge/PIPELINE_TASKS.md`.
+own `diff_golden`.
+
+**`PIPELINE_BACKLOG.md` (opened 2026-07-27) holds the NEXT era's
+thinking**, captured mid-UI-work and not yet in flight: whether the
+report's unit should be atomic claims + one-line synthesised insights
+rather than paragraphs; whether the verifier earns its tokens and
+whether calc-backed claims deserve a *deterministic* check instead of
+being dropped; and the spec rewrite that either implies. It records
+what is already built versus the real gaps — the load-bearing one being
+that **per-claim verdicts never reach `sections_json`**, so the UI
+cannot show a verification tail today.
+
+**The `ui_bridge/` folder is the repo boundary.** `PIPELINE_TASKS.md`
+is the frontend's ask; `PIPELINE_ANSWERS.md` is our dated reply (their
+§8 answered — contract still 1.0.0, market data built, and the finding
+that the swarm **cannot run outside SONACOMS/M&M** until
+GENERALIZATION_PLAN G1); **`SHARED_CONTRACT.md` is the living
+cross-repo contract** — join key, registry shape, snapshot payload,
+casing boundary, compliance constraints, and who owes what. Anything
+that would break the other repo silently belongs in that file.
 
 ### The standing sequence
 

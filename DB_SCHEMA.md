@@ -204,9 +204,16 @@ local sidecar files `data/telemetry/{run_id}.json`, NOT this table.
 7. **Service-role key is server-side only** (bypasses RLS — never
    expose to a frontend).
 8. **Schema is frozen.** New needs are met with: new `section` key
-   strings in knowledge_entries, new `relationship_type` /
-   `entities.type` values, jsonb `metadata` fields, or local files —
-   never DDL.
+   strings in knowledge_entries, new `relationship_type` values, jsonb
+   `metadata` fields, or local files — never DDL.
+   ⚠️ **`entities.type` is NOT freely extensible** — it carries a CHECK
+   constraint (`entities_type_check`) admitting only
+   company / sector / commodity / policy / person / macro_factor /
+   geography / other. Inserting `type='index'` fails with SQLSTATE
+   23514 (measured 2026-07-27). Use **`other`** plus a
+   `metadata.kind` discriminator for anything outside that list.
+   `relationship_type` and `knowledge_entries.section` ARE free text
+   and remain the real extension points.
 9. **PostgREST silently caps unbounded selects at 1,000 rows.** Any
    query that must return a complete set has to paginate with
    `.range()` until a short page comes back. Measured 2026-07-26: the
@@ -215,6 +222,14 @@ local sidecar files `data/telemetry/{run_id}.json`, NOT this table.
    `s3_compute`'s lineage `id_map` and degrading every calc citation to
    a `mem_` id. Assume any per-entity or table-wide read will cross
    this line eventually.
+   **Pagination REQUIRES a total order — order by a unique column.**
+   Paging over `order("period_start")` alone looked correct (988 rows,
+   the right count) but returned *duplicates plus misses*: hundreds of
+   rows share a `period_start`, and Postgres gives no stable tie-break
+   across separate OFFSET queries. `.order("period_start").order("id")`
+   fixes it. Verify a paginator by comparing the returned **id set**
+   at several page sizes, never the row count — the count matches
+   even when the contents are wrong.
 10. **NEVER delete `metric_observations` rows to "clean up".** Computed
     values carry `inputs[]` arrays of observation row ids, and those
     ids are persisted in `knowledge_entries` and cited by stored
@@ -224,6 +239,22 @@ local sidecar files `data/telemetry/{run_id}.json`, NOT this table.
     it is cheap to keep and unsafe to remove. If volume ever genuinely
     matters, paginate reads (invariant 9) or narrow what new writers
     emit; never retro-delete.
+11. **The database has a 500 MB ceiling, and versioning is what fills
+    it.** Supabase's free plan caps the database at **500 MB** (verified
+    2026-07-30). Measured payloads: `report_versions.sections_json`
+    averages **324 KB per row** (max 462 KB), and `knowledge_entries`
+    adds ~275 KB per run. Projected to 150 companies, **first coverage
+    lands ≈250 MB and each full refresh adds ≈100 MB** — so the free
+    plan carries initial coverage plus roughly **two refresh cycles**.
+    This is not waste: invariant 10 forbids deleting observations, and
+    `report_versions` is versioned deliberately so reports stay
+    reconstructible. It does mean **Supabase Pro (8 GB, $25/mo) is a
+    planned cost at coverage**, and that the cheapest free lever is
+    dropping `final_report_md` from `sections_json` (35.4% of every
+    report, fully derivable). **Never respond to this ceiling by
+    deleting history** — that is invariant 10, and it does not bend for
+    a quota. Full projection, plus the egress ceiling that actually
+    binds first: `INFRASTRUCTURE.md §4.1–4.2`.
 
 ## Where the 2026-07-19 architecture plan touches the DB
 

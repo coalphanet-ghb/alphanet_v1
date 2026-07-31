@@ -70,6 +70,30 @@ requires membership in THIS RUN's evidence pool. **Deliberately
 declined:** a `claim_evidence` junction table (owner decision — keep
 the array + app-code check).
 
+**Every section has TWO outputs: `blocks` for the human, `claims` for
+the machine.** This duality is easy to miss and explains most of what
+looks odd in the logs. A synthesis node emits both:
+
+- **`blocks`** — narrative, tables, flags, ranked lists. This *is* the
+  report; it is what the reader and the UI see.
+- **`claims[]`** — atomic one-fact sentences, each pinned to the
+  evidence it rests on. Nobody reads these: they are the audit trail
+  `s9_verifier` checks, one narrow question per claim — *does the cited
+  passage actually support this sentence?* Failures surface in the
+  report as "N claim(s) in this section failed verification".
+
+Consequences that otherwise look like bugs: claims backed by `calc:` or
+`sec:` are **stripped before persisting** ("N claim(s) left id-less —
+not persisted") because the verifier can only check a sentence against
+evidence *text*, so contract rule 3a sends computed assertions to a
+block instead. Claim counts drift between runs because the 8–20 density
+floor is an instruction to the model, not enforced in code. And claims
+accumulate in the DB by design — one `knowledge_entries` version per
+section per run, each with its own claims — while any single report
+uses only its own run's set. Every claim is also a verifier task, and
+the verifier is the most expensive node in a run, which is why a
+section drifting to 30+ claims is a cost event worth noticing.
+
 **Why models cite LABELS, not UUIDs — and why the DB still stores
 UUIDs.** A 36-char hex string is unreadable in a research report and
 models transpose its digits (~1 mangled citation per run for months).

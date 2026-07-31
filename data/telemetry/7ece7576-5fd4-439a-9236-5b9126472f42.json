@@ -1,0 +1,258 @@
+{
+ "run_id": "7ece7576-5fd4-439a-9236-5b9126472f42",
+ "nodes": {
+  "s2:rating_rationale": {
+   "calls": 1,
+   "in": 4256,
+   "out": 5194,
+   "cached_in": 0,
+   "latency_s": 24.814131199993426,
+   "cost_usd": 0.01371566,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_0": {
+   "calls": 1,
+   "in": 856,
+   "out": 963,
+   "cached_in": 0,
+   "latency_s": 3.488599799980875,
+   "cost_usd": 0.0,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:news_1": {
+   "calls": 2,
+   "in": 2473,
+   "out": 2955,
+   "cached_in": 0,
+   "latency_s": 14.891277600021567,
+   "cost_usd": 0.00580912,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s2:litigation": {
+   "calls": 1,
+   "in": 2588,
+   "out": 3856,
+   "cached_in": 0,
+   "latency_s": 21.579140399990138,
+   "cost_usd": 0.00986804,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_B": {
+   "calls": 1,
+   "in": 7392,
+   "out": 6294,
+   "cached_in": 0,
+   "latency_s": 35.75592520000646,
+   "cost_usd": 0.017849459999999998,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D2": {
+   "calls": 1,
+   "in": 9088,
+   "out": 8258,
+   "cached_in": 0,
+   "latency_s": 38.373271700023906,
+   "cost_usd": 0.02308342,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D1": {
+   "calls": 1,
+   "in": 17893,
+   "out": 15180,
+   "cached_in": 0,
+   "latency_s": 71.15139899999485,
+   "cost_usd": 0.04308535,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D3": {
+   "calls": 1,
+   "in": 9166,
+   "out": 4586,
+   "cached_in": 0,
+   "latency_s": 25.659045899985358,
+   "cost_usd": 0.01508464,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_E": {
+   "calls": 1,
+   "in": 9448,
+   "out": 9668,
+   "cached_in": 0,
+   "latency_s": 45.24716830000398,
+   "cost_usd": 0.026369319999999998,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s4d_followup": {
+   "calls": 1,
+   "in": 3686,
+   "out": 885,
+   "cached_in": 111,
+   "latency_s": 6.1943259999970905,
+   "cost_usd": 0.00396545,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_D": {
+   "calls": 1,
+   "in": 17815,
+   "out": 8716,
+   "cached_in": 0,
+   "latency_s": 76.6350038999808,
+   "cost_usd": 0.028886290000000002,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_F": {
+   "calls": 1,
+   "in": 20848,
+   "out": 29869,
+   "cached_in": 0,
+   "latency_s": 149.01363140001195,
+   "cost_usd": 0.07687951000000001,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_G": {
+   "calls": 1,
+   "in": 9722,
+   "out": 8462,
+   "cached_in": 0,
+   "latency_s": 45.9819051999948,
+   "cost_usd": 0.023878879999999998,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_H": {
+   "calls": 1,
+   "in": 19474,
+   "out": 11483,
+   "cached_in": 0,
+   "latency_s": 58.72881959998631,
+   "cost_usd": 0.03585847,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_C": {
+   "calls": 1,
+   "in": 23769,
+   "out": 8930,
+   "cached_in": 0,
+   "latency_s": 57.38581490001525,
+   "cost_usd": 0.03262965,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_I": {
+   "calls": 1,
+   "in": 14933,
+   "out": 28273,
+   "cached_in": 0,
+   "latency_s": 135.39802130000317,
+   "cost_usd": 0.07013101999999999,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "synth_J": {
+   "calls": 1,
+   "in": 22046,
+   "out": 4767,
+   "cached_in": 0,
+   "latency_s": 20.813768300024094,
+   "cost_usd": 0.02256503,
+   "spirals": 0,
+   "truncations": 0
+  },
+  "s9_verifier": {
+   "calls": 9,
+   "in": 27675,
+   "out": 20179,
+   "cached_in": 452,
+   "latency_s": 130.50784030003706,
+   "cost_usd": 0.059413259999999996,
+   "spirals": 0,
+   "truncations": 0
+  }
+ },
+ "extra": {
+  "verifier": {
+   "claims_checked": 170,
+   "not_fully_supported": 30,
+   "by_verdict": {
+    "partial": 19,
+    "supported": 140,
+    "contradicted": 3,
+    "unsupported": 8
+   },
+   "batches": 9,
+   "tasks_total": 170
+  },
+  "manifest": {
+   "report_path": "data/reports\\SONACOMS_20260727_200042.md",
+   "envelope_contract_version": "1.0.0",
+   "citations_total": 507,
+   "citations_unresolved": 0,
+   "verified_supported": 140,
+   "verified_total": 170,
+   "schema_issues": {},
+   "sections": {
+    "B": {
+     "blocks": 14,
+     "claims": 22
+    },
+    "C": {
+     "blocks": 7,
+     "claims": 23
+    },
+    "D": {
+     "blocks": 7,
+     "claims": 12
+    },
+    "D1": {
+     "blocks": 10,
+     "claims": 20
+    },
+    "D2": {
+     "blocks": 14,
+     "claims": 20
+    },
+    "D3": {
+     "blocks": 8,
+     "claims": 12
+    },
+    "E": {
+     "blocks": 8,
+     "claims": 20
+    },
+    "F": {
+     "blocks": 13,
+     "claims": 20
+    },
+    "G": {
+     "blocks": 6,
+     "claims": 18
+    },
+    "H": {
+     "blocks": 7,
+     "claims": 20
+    },
+    "I": {
+     "blocks": 10,
+     "claims": 12
+    },
+    "J": {
+     "blocks": 4,
+     "claims": 16
+    }
+   }
+  }
+ }
+}

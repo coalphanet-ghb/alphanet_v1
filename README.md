@@ -3,9 +3,17 @@
 Generates an institutional-grade, evidence-cited research report per
 company (no Buy/Sell/Hold — ever).
 
-**Start here:** [HANDOFF4.md](HANDOFF4.md) (current state + work order)
-and [FOUNDATIONS.md](FOUNDATIONS.md) (product identity, settled
-decisions and why, principles, compliance).
+**Start here:** [HANDOFF5.md](HANDOFF5.md) (current work — the product
+era, Sprint 1 deployment + Sprint 2 pipeline rethink),
+[HANDOFF4.md](HANDOFF4.md) (the pipeline itself: how to run it, cost
+model, retry policy, watch list) and [FOUNDATIONS.md](FOUNDATIONS.md)
+(product identity, settled decisions and why, principles, compliance).
+
+**Infrastructure:** [INFRASTRUCTURE.md](INFRASTRUCTURE.md) — deployment
+topology (two GCP projects, regions, credentials), every vendor free-tier
+ceiling verified from official docs, and measured headroom against them.
+Read it before any architectural or cost decision; §4 is where the real
+constraints are.
 
 Design docs, in dependency order:
 

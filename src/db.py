@@ -62,6 +62,23 @@ def get_or_create_entity(name: str, entity_type: str, metadata: Optional[dict] =
     return inserted.data[0]["id"]
 
 
+def get_entity_by_ticker(ticker: str,
+                         entity_type: str = "company") -> Optional[dict]:
+    """Resolve an entity by its NSE symbol (`metadata.ticker`), which is
+    the join key across the pipeline, the universe registry and the
+    frontend. Name is NOT safe to resolve on: the NSE constituent list
+    says 'Bharat Forge Ltd.' where the seeded entity says 'Bharat Forge'
+    (6 such mismatches measured 2026-07-26), so a name-keyed
+    get_or_create would create duplicates and split a company's
+    observations. Returns the row or None."""
+    client = get_client()
+    rows = (client.table("entities").select("id, name, metadata")
+            .eq("type", entity_type)
+            .filter("metadata->>ticker", "eq", ticker)
+            .limit(1).execute())
+    return rows.data[0] if rows.data else None
+
+
 def save_entity_relationship(from_entity_id: str, to_entity_id: str,
                              relationship_type: str,
                              evidence_id: Optional[str] = None) -> str:
@@ -257,13 +274,36 @@ def bulk_save_metric_observations(rows: List[dict]) -> None:
 
 
 def get_metric_observations(entity_id: str,
-                            metric_names: Optional[List[str]] = None) -> List[dict]:
+                            metric_names: Optional[List[str]] = None,
+                            _page: int = 1000) -> List[dict]:
+    """Every observation for an entity, PAGINATED.
+
+    PostgREST silently caps an unbounded select at 1,000 rows
+    (DB_SCHEMA invariant 9). This function's caller in s3_compute builds
+    the lineage id_map from it, and a truncated map degrades every calc
+    citation to a `mem_` id without erroring — SONA was measured at 988
+    rows on 2026-07-26, twelve short of that cliff, before the daily
+    market-data job starts adding ~2 rows per trading day.
+
+    Paginating REQUIRES a total order: `period_start` alone is not
+    unique, and Postgres gives no stable tie-break across separate
+    OFFSET queries — measured, that returned 988 rows made of
+    duplicates-plus-misses rather than the true 988. Ordering by
+    (period_start, id) makes the sequence deterministic."""
     client = get_client()
-    q = (client.table("metric_observations").select("*")
-         .eq("entity_id", entity_id).order("period_start"))
-    if metric_names:
-        q = q.in_("metric_name", metric_names)
-    return q.execute().data or []
+    out: List[dict] = []
+    offset = 0
+    while True:
+        q = (client.table("metric_observations").select("*")
+             .eq("entity_id", entity_id).order("period_start").order("id")
+             .range(offset, offset + _page - 1))
+        if metric_names:
+            q = q.in_("metric_name", metric_names)
+        batch = q.execute().data or []
+        out += batch
+        if len(batch) < _page:
+            return out
+        offset += _page
 
 
 # --- graph helpers ----------------------------------------------------------

@@ -17,7 +17,7 @@
   },
   "bseindia.com": {
     "bad": 5,
-    "ok": 170
+    "ok": 182
   },
   "business-standard.com": {
     "bad": 7,
@@ -46,6 +46,14 @@
   "casemine.com": {
     "bad": 0,
     "ok": 4
+  },
+  "cnbctv18.com": {
+    "bad": 0,
+    "ok": 2
+  },
+  "compoundingai.in": {
+    "bad": 0,
+    "ok": 1
   },
   "crisil.com": {
     "bad": 1,
@@ -119,9 +127,13 @@
     "bad": 0,
     "ok": 1
   },
+  "gripinvest.in": {
+    "bad": 0,
+    "ok": 1
+  },
   "groww.in": {
     "bad": 0,
-    "ok": 7
+    "ok": 8
   },
   "in.investing.com": {
     "bad": 0,
@@ -176,10 +188,14 @@
     "ok": 1
   },
   "moneycontrol.com": {
-    "bad": 1,
+    "bad": 2,
     "ok": 15
   },
   "mospi.gov.in": {
+    "bad": 0,
+    "ok": 1
+  },
+  "multibagg.ai": {
     "bad": 0,
     "ok": 1
   },
@@ -237,15 +253,15 @@
   },
   "sahi.com": {
     "bad": 0,
-    "ok": 13
+    "ok": 17
   },
   "scanx.trade": {
     "bad": 0,
-    "ok": 11
+    "ok": 14
   },
   "screener.in": {
     "bad": 0,
-    "ok": 160
+    "ok": 162
   },
   "siam.in": {
     "bad": 0,
@@ -253,7 +269,7 @@
   },
   "simplywall.st": {
     "bad": 0,
-    "ok": 5
+    "ok": 6
   },
   "smart-investing.in": {
     "bad": 0,
@@ -297,7 +313,7 @@
   },
   "timesofindia.indiatimes.com": {
     "bad": 0,
-    "ok": 4
+    "ok": 5
   },
   "tipranks.com": {
     "bad": 0,
@@ -325,7 +341,7 @@
   },
   "whalesbook.com": {
     "bad": 0,
-    "ok": 11
+    "ok": 12
   },
   "wisesheets.io": {
     "bad": 0,
